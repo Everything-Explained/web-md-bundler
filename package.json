@@ -9,7 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bluebird": "^3.5.1",
+    "@types/node": "^11.9.2",
+    "bluebird": "^3.5.3",
     "bunyan": "^1.8.12"
   }
 }

@@ -5,14 +5,10 @@ import * as bunyan from 'bunyan';
 
 let readFile = bluebird.promisify(require('fs').readFile) as any
   , readDir = bluebird.promisify(require('fs').readdir) as any
-  , accessFile = bluebird.promisify(access) as any
   , log = bunyan.createLogger({name: 'Builder'})
-  , faqPath = '../au/src/components/home/pages/faq'
-  , logPath = '../au/src/components/changelog'
-  , workingPath = logPath
 ;
 
-interface IConfig {
+interface IPage {
   title: string;
   date: string;
   content: string;
@@ -21,94 +17,150 @@ interface IConfig {
 }
 
 
+interface IWorkingFile {
+  path: string;
+  name: string;
+}
+
+
 class MarkdownBuilder {
 
-  private _filesPath = path.join(__dirname, workingPath);
-  private _configFile = path.join(this._filesPath, `${path.basename(this._filesPath)}.json`);
+  public filePaths = [
+    './test',
+    './test2'
+    // '../client/src/views/faq',
+    // '../client/src/views/changelog'
+  ];
 
-  private _config: IConfig[] = [];
+  private _workingFiles: IWorkingFile[] = [];
   private _configTitles: string[] = [];
 
-  private _added = 0;
-  private _changes = 0;
+  private _addCount = 0;
+  private _changeCount = 0;
 
   constructor() {
+    this.filePaths.forEach(p => {
+      let fullpath = path.join(__dirname, p);
+      this._workingFiles.push(
+        {
+          path: fullpath,
+          name: `${path.basename(fullpath)}.json`
+        }
+      );
+    });
     log.info('...File Processing Started...');
     this.readDir();
   }
 
+
   async readDir() {
-    let files = await readDir(this._filesPath) as string[]
-      , oldConfig: IConfig[] = []
-    ;
 
-    try {
-      let file = await readFile(this._configFile);
-      oldConfig = JSON.parse(file);
-    } catch {}
-
-    // Get only MarkDown files
-    files = files.filter(v => { return path.extname(v) == '.md'; });
-    let count = 0
-      , deleted: string[] = []
-    ;
-
-
-    for (let f in oldConfig) {
-      if (files.includes(`${f}.md`)) continue;
-      deleted.push(f);
-    }
-
-    files.forEach(async f => {
-      let filePath = path.join(this._filesPath, f)
-        , fileData = await readFile(filePath, 'utf8') as string
-        , header = fileData.split('\n', 1)[0].trim()
-        , validHead = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
-        , filename = f.split('.', 1)[0]
+    this._workingFiles.forEach(async fileInfo => {
+      let files = await readDir(fileInfo.path) as string[]
+        , oldPages: IPage[] = []
       ;
 
+      try {
+        let fileConfig = await readFile(
+          fileInfo.path
+          + '\\' +
+          fileInfo.name
+        );
+        oldPages = JSON.parse(fileConfig);
+      } catch {}
 
-      if (!validHead.test(header)) {
-        log.warn(`[${filename}] ::: Missing or Invalid Header!`);
-        return;
-      }
+      // Get only Markdown files
+      files = files.filter(v => { return path.extname(v) == '.md'; });
 
-
-      // Remove header
-      fileData = fileData.replace(`${header}\r\n`, '');
-
-      let details = JSON.parse(Buffer.from(header, 'base64'). toString('utf8')) as IConfig;
-
-      // Store titles for deletion test
-      this._configTitles.push(details.title);
-
-      details.content = fileData;
-      let [updated, changes] = this._checkIntegrity(oldConfig, details);
-
-      if (updated) {
-        log.info(`Updated: [${details.title}] :: ${changes > 0 ? '+' : ''}${changes} char(s)`);
-        ++this._changes;
-      }
-      else if (!updated && changes) {
-        log.info(`Added:::[${details.title}]`);
-        ++this._added;
-      }
-
-      // Update date for changed file
-      if ((updated || changes) && details.dateUpdates)  {
-        details.date = new Date().toISOString();
-      }
-
-      this._config.push(details);
-      ++count;
-
-      if (count == files.length) this._completeBuild(oldConfig);
-
+      this._updateFiles(files, oldPages, fileInfo);
     });
 
   }
 
-  private _checkIntegrity(old: IConfig[], current: IConfig): [boolean, number] {
+
+  private _updateFiles(mdFiles: string[], oldPages: IPage[], fileInfo: IWorkingFile) {
+
+    let fileCount = 0
+      , pages: IPage[] = []
+    ;
+
+    mdFiles.forEach(async f => {
+      let filePath = path.join(fileInfo.path, f)
+        , fileContent = await readFile(filePath, 'utf8') as string
+        , header = fileContent.split('\n', 3).map(v => v.trim())
+      ;
+
+      if (!this._isValidHeader(header)) {
+        return false;
+      }
+      let title = header[0].split('title: ')[1]
+        , author = header[1].split('author: ')[1]
+      ;
+
+      let page = {
+        title,
+        author,
+        content: fileContent
+                  .replace(header[0], '')
+                  .replace(header[1], '')
+                  .trim()
+      } as IPage;
+
+      let [updated, changes] = this._checkIntegrity(oldPages, page);
+
+      if (updated) {
+        log.info(
+          `Updated: [${page.title}] :: ` +
+          `${changes > 0 ? '+' : ''}${changes} char(s)`
+        );
+        ++this._changeCount;
+      }
+      else if (!updated && changes) {
+        log.info(`Added::: [${page.title}]`);
+        ++this._addCount;
+      }
+
+      // Update date for changed file
+      if ((updated || changes) && page.dateUpdates)  {
+        page.date = new Date().toISOString();
+      }
+
+      pages.push(page);
+      ++fileCount;
+
+      if (fileCount == mdFiles.length)
+        this._completeBuild(
+          oldPages,
+          fileInfo.path + '\\' + fileInfo.name,
+          pages
+        );
+
+    });
+  }
+
+
+
+  private _isValidHeader(header: string[]) {
+
+    if (header.length < 3) {
+      log.warn('Header length too short');
+      return false;
+    }
+
+    if (!~header[0].indexOf('title:')) {
+      log.warn('Missing TITLE in header');
+      return false;
+    }
+
+    if (!~header[1].indexOf('author:')) {
+      log.warn('Missing AUTHOR in header');
+      return false;
+    }
+
+    return true;
+  }
+
+  private _checkIntegrity(old: IPage[], current: IPage): [boolean, number] {
     for (let o of old) {
       if (o.title == current.title) {
         if (o.content != current.content) {
@@ -121,39 +173,26 @@ class MarkdownBuilder {
   }
 
 
-  private _completeBuild(old: IConfig[]) {
-
+  private _completeBuild(oldPages: IPage[], filePath: string, pages: IPage[]) {
     let deleted: string[] = [];
 
-    for (let o of old) {
-      if (this._configTitles.includes(o.title)) continue;
+    for (let o of oldPages) {
+      if (pages.find(p => p.title == o.title)) continue;
       deleted.push(o.title);
     }
 
-    if (this._changes || this._added || deleted.length) {
-      writeFileSync(this._configFile, JSON.stringify(this._config, null, 2));
+    if (this._changeCount || this._addCount || deleted.length) {
+      writeFileSync(filePath, JSON.stringify(pages, null, 2));
       if (deleted.length) {
         for (let d of deleted) {
-          log.info(`Deleted:::[${d}]`);
+          log.info(`Deleted: [${d}]`);
         }
       }
     }
     else {
       log.warn('(No Changes or Additions)');
     }
-    log.info('...File Processing Finished...');
 
   }
 }
 new MarkdownBuilder();
-
-// let details = {
-//   title: 'α48 : unreleased',
-//   author: 'Aedaeum',
-//   date: '2019-01-01T00:00:00.000Z',
-//   dateUpdates: false
-// };
-
-// console.log(
-//   Buffer.from(JSON.stringify(details)).toString('base64')
-// );
