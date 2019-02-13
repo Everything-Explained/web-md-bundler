@@ -5,6 +5,7 @@ import * as bunyan from 'bunyan';
 
 let readFile = bluebird.promisify(require('fs').readFile) as any
   , readDir = bluebird.promisify(require('fs').readdir) as any
+  , readStats = bluebird.promisify(require('fs').stat) as any
   , log = bunyan.createLogger({name: 'Builder'})
 ;
 
@@ -33,7 +34,6 @@ class MarkdownBuilder {
   ];
 
   private _workingFiles: IWorkingFile[] = [];
-  private _configTitles: string[] = [];
 
   private _addCount = 0;
   private _changeCount = 0;
@@ -90,7 +90,7 @@ class MarkdownBuilder {
         , header = fileContent.split('\n', 3).map(v => v.trim())
       ;
 
-      if (!this._isValidHeader(header)) {
+      if (!this._isValidHeader(header, f)) {
         return false;
       }
       let title = header[0].split('title: ')[1]
@@ -103,8 +103,21 @@ class MarkdownBuilder {
         content: fileContent
                   .replace(header[0], '')
                   .replace(header[1], '')
-                  .trim()
+                  .replace(header[2], '')
+                  .trim(),
+        dateUpdates: !~header[2].indexOf('date:'),
+
       } as IPage;
+
+      if (!page.dateUpdates) {
+        let date = header[2].split(':');
+        date.shift();
+        page.date = new Date(date.join(':').trim()).toISOString();
+      }
+      else {
+        let fileStats = await readStats(filePath);
+        page.date = fileStats.mtime;
+      }
 
       let [updated, changes] = this._checkIntegrity(oldPages, page);
 
@@ -140,20 +153,20 @@ class MarkdownBuilder {
 
 
 
-  private _isValidHeader(header: string[]) {
+  private _isValidHeader(header: string[], filename: string) {
 
     if (header.length < 3) {
-      log.warn('Header length too short');
+      log.warn(`[${filename}]::Header length too short`);
       return false;
     }
 
     if (!~header[0].indexOf('title:')) {
-      log.warn('Missing TITLE in header');
+      log.warn(`[${filename}]::Missing TITLE in header`);
       return false;
     }
 
     if (!~header[1].indexOf('author:')) {
-      log.warn('Missing AUTHOR in header');
+      log.warn(`[${filename}]::Missing AUTHOR in header`);
       return false;
     }
 
