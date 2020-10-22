@@ -3,6 +3,7 @@ import * as bluebird from 'bluebird';
 import { writeFileSync, access } from 'fs';
 import * as bunyan from 'bunyan';
 
+// It's less ambiguous to use promises instead of callbacks
 let readFile = bluebird.promisify(require('fs').readFile) as any
   , readDir = bluebird.promisify(require('fs').readdir) as any
   , readStats = bluebird.promisify(require('fs').stat) as any
@@ -14,6 +15,7 @@ interface IPage {
   date: string;
   content: string;
   author: string;
+  /** If dates should be updated automatically when file changes */
   dateUpdates: boolean;
 }
 
@@ -27,16 +29,17 @@ interface IWorkingFile {
 class MarkdownBuilder {
 
   public filePaths = [
-    './test',
-    './test2'
-    // '../client/src/views/faq',
-    // '../client/src/views/changelog'
+    '../client/src/views/home',
+    '../client/src/views/faq',
+    '../client/src/views/changelog'
   ];
 
   private _workingFiles: IWorkingFile[] = [];
 
   private _addCount = 0;
   private _changeCount = 0;
+
+
 
   constructor() {
     this.filePaths.forEach(p => {
@@ -51,6 +54,8 @@ class MarkdownBuilder {
     log.info('...File Processing Started...');
     this.readDir();
   }
+
+
 
 
   async readDir() {
@@ -87,27 +92,15 @@ class MarkdownBuilder {
     mdFiles.forEach(async f => {
       let filePath = path.join(fileInfo.path, f)
         , fileContent = await readFile(filePath, 'utf8') as string
+        // Each file should have a 3 line header at the top
         , header = fileContent.split('\n', 3).map(v => v.trim())
       ;
 
       if (!this._isValidHeader(header, f)) {
         return false;
       }
-      let title = header[0].split('title: ')[1]
-        , author = header[1].split('author: ')[1]
-      ;
 
-      let page = {
-        title,
-        author,
-        content: fileContent
-                  .replace(header[0], '')
-                  .replace(header[1], '')
-                  .replace(header[2], '')
-                  .trim(),
-        dateUpdates: !~header[2].indexOf('date:'),
-
-      } as IPage;
+      let page = this._toPage(header, fileContent);
 
       if (!page.dateUpdates) {
         let date = header[2].split(':');
@@ -153,6 +146,34 @@ class MarkdownBuilder {
 
 
 
+  /**
+   * Converts the raw header and content of a markdown file
+   * into a page object.
+   *
+   * @param header The header list
+   * @param content The raw file content
+   */
+  private _toPage(header: string[], content: string) {
+    let title = header[0].split('title: ')[1]
+      , author = header[1].split('author: ')[1]
+    ;
+
+    return {
+      title,
+      author,
+      content: content
+                .replace(header[0], '')
+                .replace(header[1], '')
+                .replace(header[2], '')
+                .trim(),
+      // True when 'date:' is NOT present
+      dateUpdates: !~header[2].indexOf('date:'),
+
+    } as IPage;
+  }
+
+
+
   private _isValidHeader(header: string[], filename: string) {
 
     if (header.length < 3) {
@@ -173,6 +194,7 @@ class MarkdownBuilder {
     return true;
   }
 
+  
   private _checkIntegrity(old: IPage[], current: IPage): [boolean, number] {
     for (let o of old) {
       if (o.title == current.title) {
