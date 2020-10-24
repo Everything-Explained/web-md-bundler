@@ -4,7 +4,8 @@
   "description": "Builds markdown files into a single JSON file, for web-client consumption.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tape ./specs/*.js | tap-diff",
+    "cov": "nyc --reporter=lcov tape ./specs/*.js | tap-diff"
   },
   "author": "",
   "license": "ISC",
@@ -14,6 +15,7 @@
     "front-matter": "^4.0.2"
   },
   "devDependencies": {
+    "@types/tape": "^4.13.0",
     "@typescript-eslint/eslint-plugin": "^4.5.0",
     "@typescript-eslint/parser": "^4.5.0",
     "eslint": "^7.12.0",
