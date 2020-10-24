@@ -1,7 +1,7 @@
 {
-  "name": "faqbuilder",
+  "name": "page-builder",
   "version": "1.0.0",
-  "description": "Builds the noumenae FAQ markdown into faq.json configuration file",
+  "description": "Builds markdown files into a single JSON file, for web-client consumption.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,8 +9,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^11.9.2",
-    "bluebird": "^3.5.3",
-    "bunyan": "^1.8.12"
+    "@types/node": "^11.15.33",
+    "bunyan": "^1.8.14",
+    "front-matter": "^4.0.2"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.5.0",
+    "@typescript-eslint/parser": "^4.5.0",
+    "eslint": "^7.12.0",
+    "typescript": "^4.0.3"
   }
 }
