@@ -2,3 +2,5 @@
 node_modules
 test/
 test2/
+coverage/
+.nyc*/
