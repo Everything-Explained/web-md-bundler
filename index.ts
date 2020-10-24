@@ -29,9 +29,9 @@ interface IWorkingFile {
 class MarkdownBuilder {
 
   public filePaths = [
-    '../client/src/views/home',
-    '../client/src/views/faq',
-    '../client/src/views/changelog'
+    '../web_client/src/views/home',
+    '../web_client/src/views/faq',
+    '../web_client/src/views/changelog'
   ];
 
   private _workingFiles: IWorkingFile[] = [];
@@ -194,7 +194,7 @@ class MarkdownBuilder {
     return true;
   }
 
-  
+
   private _checkIntegrity(old: IPage[], current: IPage): [boolean, number] {
     for (let o of old) {
       if (o.title == current.title) {
