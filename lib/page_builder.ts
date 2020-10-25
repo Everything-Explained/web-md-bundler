@@ -41,8 +41,8 @@ export class PageBuilder {
       ;
       for (const dir of this._dirs) {
         const fileNames   = await this._pfs.readdir(dir);
-        const mdFilePaths = this._getFileNamesAsPaths(dir, fileNames);
-        const mdFileData  = await this._getFilesFrontMatter(mdFilePaths);
+        const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
+        const mdFileData = await this._getFilesFrontMatter(mdFilePaths);
         this._fileData.set(dir, mdFileData);
       }
       this.onReady(null);
@@ -57,13 +57,16 @@ export class PageBuilder {
     });
   }
 
-  private _getFileNamesAsPaths(dir: string, fileNames: string[]) {
+  private _filterMDFilePaths(dir: string, fileNames: string[]) {
     if (fileNames.length == 0)
       throw Error(`No files to parse @${dir}`)
     ;
     const filePaths = fileNames
       .filter(name => pathExtname(name) == '.md')
       .map(name => `${dir}/${name}`)
+    ;
+    if (!filePaths.length)
+      throw Error(`No .md files found @${dir}`)
     ;
     return filePaths;
   }
