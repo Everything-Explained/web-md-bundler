@@ -22,10 +22,7 @@ export class PageBuilder {
   private _oldFileData: Map<string, MDFormat[]> = new Map();
 
   get areDirsValid() {
-    for (const p of this._dirs) {
-      if (!existsSync(p)) return false;
-    }
-    return true;
+    return this._dirs.every(dir => existsSync(dir));
   }
 
 
