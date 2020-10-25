@@ -28,10 +28,10 @@ export class PageBuilder {
 
   constructor(dirs: string[], public onReady: (err: Error|null) => void) {
     this._dirs = dirs;
-    this._loadFiles();
+    this._loadMDFiles();
    }
 
-  async _loadFiles() {
+  async _loadMDFiles() {
     try {
       if (!this._dirs.length) throw Error('Directory configuration is EMPTY.');
       if (!this.areDirsValid) throw Error('One or more paths do NOT exist.')
