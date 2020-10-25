@@ -1,7 +1,7 @@
 import { promises, existsSync } from 'fs';
 import frontMatter, { FrontMatterResult } from 'front-matter';
 import smap from 'source-map-support';
-import { extname } from 'path';
+import { basename as pathBasename, extname as pathExtname } from 'path';
 
 smap.install();
 
@@ -42,7 +42,7 @@ export class PageBuilder {
       for (const dir of this._dirs) {
         const fileNames   = await this._pfs.readdir(dir);
         const mdFilePaths = this._getFileNamesAsPaths(dir, fileNames);
-        const mdFileData  = await this._parseFiles(mdFilePaths);
+        const mdFileData  = await this._getFilesFrontMatter(mdFilePaths);
         this._fileData.set(dir, mdFileData);
       }
       this.onReady(null);
@@ -50,13 +50,10 @@ export class PageBuilder {
     catch (err) { this.onReady(err); }
   }
 
-  private async _parseFiles(filePaths: string[]) {
-    const fileStrings = await this._readAllFiles(filePaths);
-    return fileStrings.map((data, i) => {
-      if (!frontMatter.test(data))
-        throw Error(`Invalid or Missing front matter: ${filePaths[i]}`)
-      ;
-      return frontMatter<MDFormat>(data);
+  private async _getFilesFrontMatter(filePaths: string[]) {
+    const filesContent = await this._readAllFiles(filePaths);
+    return filesContent.map((data, i) => {
+      return this._getFileFrontMatter(filePaths[i], data);
     });
   }
 
@@ -65,7 +62,7 @@ export class PageBuilder {
       throw Error(`No files to parse @${dir}`)
     ;
     const filePaths = fileNames
-      .filter(name => extname(name) == '.md')
+      .filter(name => pathExtname(name) == '.md')
       .map(name => `${dir}/${name}`)
     ;
     return filePaths;
@@ -78,6 +75,27 @@ export class PageBuilder {
       fileData.push(data);
     }
     return fileData;
+  }
+
+  /**
+   * Validates expected properties from a files front matter
+   * and returns it if no errors are found.
+   */
+  private _getFileFrontMatter(path: string, file: string) {
+    if (!frontMatter.test(file))
+      throw Error(`Invalid or Missing front matter: ${path}`)
+    ;
+    const fileObj = frontMatter<MDFormat>(file);
+    if (!fileObj.attributes.title)
+      throw Error(`File is missing a title: ${path}`)
+    ;
+    if (fileObj.attributes.title != pathBasename(path, '.md'))
+      throw Error(`Title does not match file name: ${path}`)
+    ;
+    if (!fileObj.attributes.author)
+      throw Error(`Missing Author: ${path}`)
+    ;
+    return fileObj;
   }
 
 }
