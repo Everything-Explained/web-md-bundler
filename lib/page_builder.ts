@@ -53,7 +53,7 @@ export class PageBuilder {
   private async _getFilesFrontMatter(filePaths: string[]) {
     const filesContent = await this._readAllFiles(filePaths);
     return filesContent.map((data, i) => {
-      return this._getFileFrontMatter(filePaths[i], data);
+      return this._getValidFrontMatter(filePaths[i], data);
     });
   }
 
@@ -61,14 +61,14 @@ export class PageBuilder {
     if (fileNames.length == 0)
       throw Error(`No files to parse @${dir}`)
     ;
-    const filePaths = fileNames
+    const mdFilePaths = fileNames
       .filter(name => pathExtname(name) == '.md')
       .map(name => `${dir}/${name}`)
     ;
-    if (!filePaths.length)
+    if (!mdFilePaths.length)
       throw Error(`No .md files found @${dir}`)
     ;
-    return filePaths;
+    return mdFilePaths;
   }
 
   private async _readAllFiles(filePaths: string[]) {
@@ -84,19 +84,19 @@ export class PageBuilder {
    * Validates expected properties from a files front matter
    * and returns it if no errors are found.
    */
-  private _getFileFrontMatter(path: string, file: string) {
-    if (!frontMatter.test(file))
-      throw Error(`Invalid or Missing front matter: ${path}`)
+  private _getValidFrontMatter(filePath: string, fileContent: string) {
+    if (!frontMatter.test(fileContent))
+      throw Error(`Invalid or Missing front matter: ${filePath}`)
     ;
-    const fileObj = frontMatter<MDFormat>(file);
+    const fileObj = frontMatter<MDFormat>(fileContent);
     if (!fileObj.attributes.title)
-      throw Error(`File is missing a title: ${path}`)
+      throw Error(`File is missing a title: ${filePath}`)
     ;
-    if (fileObj.attributes.title != pathBasename(path, '.md'))
-      throw Error(`Title does not match file name: ${path}`)
+    if (fileObj.attributes.title != pathBasename(filePath, '.md'))
+      throw Error(`Title does not match file name: ${filePath}`)
     ;
     if (!fileObj.attributes.author)
-      throw Error(`Missing Author: ${path}`)
+      throw Error(`Missing Author: ${filePath}`)
     ;
     return fileObj;
   }
