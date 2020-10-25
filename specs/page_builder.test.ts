@@ -20,35 +20,39 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('contructor() throws an error with invalid front matter.', t => {
-    t.plan(1); new PageBuilder([`${mockFolder}/invalidfile`], (err) => {
+    const testFolder = `${mockFolder}/test_invalid_file`;
+    t.plan(1); new PageBuilder([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('contructor() throws an error with no .md files.', t => {
-    t.plan(1); new PageBuilder([`${mockFolder}/emptytest`], (err) => {
+    const testFolder = `${mockFolder}/test_empty_directory`;
+    t.plan(1); new PageBuilder([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('contructor() throws an error when loaded file has invalid title.', t => {
-    t.plan(1); new PageBuilder([`${mockFolder}/titleerror`], (err) => {
+    const testFolder = `${mockFolder}/test_inconsistent_title`;
+    t.plan(1); new PageBuilder([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('contructor() throws an error when loaded file has missing title.', t => {
-    t.plan(1); new PageBuilder([`${mockFolder}/missingtitle`], (err) => {
+    const testFolder = `${mockFolder}/test_missing_title`;
+    t.plan(1); new PageBuilder([testFolder], (err) => {
       t.ok(err instanceof Error);
-
     });
   });
   t.test('contructor() throws an error when loaded file has missing author.', t => {
-    t.plan(1); new PageBuilder([`${mockFolder}/missingauthor`], (err) => {
+    const testFolder = `${mockFolder}/test_missing_author`;
+    t.plan(1); new PageBuilder([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
 
   t.test('get areDirsValid returns true when paths are valid.', t => {
     t.plan(2);
-    const pg = new PageBuilder([`${mockFolder}/one`], (err) => {
+    const pg = new PageBuilder([`${mockFolder}/test_valid_directory`], (err) => {
       t.is(err, null,       'error is null');
       t.ok(pg.areDirsValid, 'should be valid');
     });
