@@ -14,21 +14,19 @@ tape('PageBuilder{}', t => {
       t.ok(err instanceof Error);
     });
   });
-  t.test('contructor() throws an error with invalid paths.', t => {
-    t.plan(1); new PageBuilder(['../invalid/path'], (err) => {
-      t.ok(err instanceof Error);
-    });
-  });
   t.test('contructor() throws an error with invalid front matter.', t => {
     const testFolder = `${mockFolder}/test_invalid_file`;
     t.plan(1); new PageBuilder([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
-  t.test('contructor() throws an error with no .md files.', t => {
-    const testFolder = `${mockFolder}/test_empty_directory`;
-    t.plan(1); new PageBuilder([testFolder], (err) => {
-      t.ok(err instanceof Error);
+  t.test('contructor() throws an error when directory missing .md files.', t => {
+    const testFolder = `${mockFolder}/test_no_md_files`;
+    t.plan(2); new PageBuilder([testFolder], (err) => {
+      t.ok(err instanceof Error, 'no .md files present');
+    });
+    new PageBuilder([`${mockFolder}/test_empty_directory`], (err) => {
+      t.ok(err instanceof Error, 'empty directory');
     });
   });
   t.test('contructor() throws an error when loaded file has invalid title.', t => {
@@ -50,6 +48,11 @@ tape('PageBuilder{}', t => {
     });
   });
 
+  t.test('get areDirsValid throws an error with invalid directories.', t => {
+    t.plan(1); new PageBuilder(['../invalid/path'], (err) => {
+      t.ok(err instanceof Error);
+    });
+  });
   t.test('get areDirsValid returns true when paths are valid.', t => {
     t.plan(2);
     const pg = new PageBuilder([`${mockFolder}/test_valid_directory`], (err) => {

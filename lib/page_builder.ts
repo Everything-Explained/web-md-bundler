@@ -58,9 +58,6 @@ export class PageBuilder {
   }
 
   private _filterMDFilePaths(dir: string, fileNames: string[]) {
-    if (fileNames.length == 0)
-      throw Error(`No files to parse @${dir}`)
-    ;
     const mdFilePaths = fileNames
       .filter(name => pathExtname(name) == '.md')
       .map(name => `${dir}/${name}`)
