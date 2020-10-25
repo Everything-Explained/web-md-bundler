@@ -25,7 +25,7 @@ tape('PageBuilder{}', t => {
     t.plan(2); new PageBuilder([testFolder], (err) => {
       t.ok(err instanceof Error, 'no .md files present');
     });
-    new PageBuilder([`${mockFolder}/test_empty_directory`], (err) => {
+    new PageBuilder([`${mockFolder}/test_empty_dir`], (err) => {
       t.ok(err instanceof Error, 'empty directory');
     });
   });
