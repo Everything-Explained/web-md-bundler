@@ -1,6 +1,9 @@
 import { promises, existsSync } from 'fs';
 import frontMatter, { FrontMatterResult } from 'front-matter';
+import smap from 'source-map-support';
+import { extname } from 'path';
 
+smap.install();
 
 
 interface MDFormat {
@@ -37,25 +40,35 @@ export class PageBuilder {
       if (!this.areDirsValid) throw Error('One or more paths do NOT exist.')
       ;
       for (const dir of this._dirs) {
-        const fileNames = await this._pfs.readdir(dir);
-        const filePaths = fileNames.map(name => `${dir}/${name}`);
-        const filesData = await this.parseFiles(filePaths);
-        this._fileData.set(dir, filesData);
+        const fileNames   = await this._pfs.readdir(dir);
+        const mdFilePaths = this._getFileNamesAsPaths(dir, fileNames);
+        const mdFileData  = await this._parseFiles(mdFilePaths);
+        this._fileData.set(dir, mdFileData);
       }
       this.onReady(null);
     }
     catch (err) { this.onReady(err); }
   }
 
-  async parseFiles(filePaths: string[]) {
+  private async _parseFiles(filePaths: string[]) {
     const fileStrings = await this._readAllFiles(filePaths);
-    return fileStrings.map(data => {
+    return fileStrings.map((data, i) => {
       if (!frontMatter.test(data))
-        throw Error(
-          `Invalid or Missing front matter \nContents: "${data.substr(0, 30)}"`
-      );
+        throw Error(`Invalid or Missing front matter: ${filePaths[i]}`)
+      ;
       return frontMatter<MDFormat>(data);
     });
+  }
+
+  private _getFileNamesAsPaths(dir: string, fileNames: string[]) {
+    if (fileNames.length == 0)
+      throw Error(`No files to parse @${dir}`)
+    ;
+    const filePaths = fileNames
+      .filter(name => extname(name) == '.md')
+      .map(name => `${dir}/${name}`)
+    ;
+    return filePaths;
   }
 
   private async _readAllFiles(filePaths: string[]) {
