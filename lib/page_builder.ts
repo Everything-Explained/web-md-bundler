@@ -27,11 +27,11 @@ export class PageBuilder {
   private _pfs     = promises;
   private _dateNow = Date.now();
 
-  private _fileData    : Map<string, Page[]> = new Map();
+  private _pageData    : Map<string, Page[]> = new Map();
   private _oldFileData : Map<string, Page[]> = new Map();
 
 
-  get fileData() { return this._fileData; }
+  get fileData() { return this._pageData; }
 
   get areDirsValid() {
     return this._dirs.every(dir => existsSync(dir));
@@ -52,8 +52,8 @@ export class PageBuilder {
       for (const dir of this._dirs) {
         const fileNames   = await this._pfs.readdir(dir);
         const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
-        const mdFileData = await this._getPagesFromFiles(mdFilePaths);
-        this._fileData.set(dir, mdFileData);
+        const pages       = await this._getPagesFromFiles(mdFilePaths);
+        this._pageData.set(dir, pages);
       }
       callback(null);
     }
@@ -61,9 +61,9 @@ export class PageBuilder {
   }
 
   private async _getPagesFromFiles(filePaths: string[]) {
-    const filesContent = await this._readAllFiles(filePaths);
-    return filesContent.map((data, i) => {
-      return this._getPageFromFile(filePaths[i], data);
+    const files = await this._readAllFiles(filePaths);
+    return files.map((file, i) => {
+      return this._fileToPage(filePaths[i], file);
     });
   }
 
@@ -87,15 +87,11 @@ export class PageBuilder {
     return fileData;
   }
 
-  /**
-   * Validates expected properties from a files front matter
-   * and returns it if no errors are found.
-   */
-  private _getPageFromFile(filePath: string, fileContent: string) {
-    if (!frontMatter.test(fileContent))
+  private _fileToPage(filePath: string, file: string) {
+    if (!frontMatter.test(file))
       throw Error(`Invalid or Missing front matter: ${filePath}`)
     ;
-    const fileObj = frontMatter<MDFormat>(fileContent);
+    const fileObj = frontMatter<MDFormat>(file);
     if (!fileObj.attributes.title)
       throw Error(`File is missing a title: ${filePath}`)
     ;
