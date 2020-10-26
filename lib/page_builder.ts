@@ -1,9 +1,10 @@
-import { promises, existsSync } from 'fs';
+import { promises, existsSync, writeFile } from 'fs';
 import frontMatter, { FrontMatterResult } from 'front-matter';
 import smap from 'source-map-support';
-import { basename as pathBasename, extname as pathExtname } from 'path';
+import { basename as pathBasename, dirname as pathDirname, extname as pathExtname } from 'path';
 
 smap.install();
+
 
 
 interface MDFormat {
@@ -12,14 +13,20 @@ interface MDFormat {
   date?: string;
 }
 
+interface Page extends MDFormat {
+  content: string;
+}
+
+
+
 
 export class PageBuilder {
 
   private _dirs;
   /** Promisified File System */
   private _pfs = promises;
-  private _fileData: Map<string, FrontMatterResult<MDFormat>[]> = new Map();
-  private _oldFileData: Map<string, MDFormat[]> = new Map();
+  private _fileData: Map<string, Page[]> = new Map();
+  private _oldFileData: Map<string, Page[]> = new Map();
 
   get areDirsValid() {
     return this._dirs.every(dir => existsSync(dir));
@@ -39,7 +46,7 @@ export class PageBuilder {
       for (const dir of this._dirs) {
         const fileNames   = await this._pfs.readdir(dir);
         const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
-        const mdFileData = await this._getFilesFrontMatter(mdFilePaths);
+        const mdFileData = await this._getPagesFromFiles(mdFilePaths);
         this._fileData.set(dir, mdFileData);
       }
       this.onReady(null);
@@ -47,10 +54,10 @@ export class PageBuilder {
     catch (err) { this.onReady(err); }
   }
 
-  private async _getFilesFrontMatter(filePaths: string[]) {
+  private async _getPagesFromFiles(filePaths: string[]) {
     const filesContent = await this._readAllFiles(filePaths);
     return filesContent.map((data, i) => {
-      return this._getValidFrontMatter(filePaths[i], data);
+      return this._getPageFromFile(filePaths[i], data);
     });
   }
 
@@ -78,7 +85,7 @@ export class PageBuilder {
    * Validates expected properties from a files front matter
    * and returns it if no errors are found.
    */
-  private _getValidFrontMatter(filePath: string, fileContent: string) {
+  private _getPageFromFile(filePath: string, fileContent: string) {
     if (!frontMatter.test(fileContent))
       throw Error(`Invalid or Missing front matter: ${filePath}`)
     ;
@@ -92,7 +99,11 @@ export class PageBuilder {
     if (!fileObj.attributes.author)
       throw Error(`Missing Author: ${filePath}`)
     ;
-    return fileObj;
+    if (!fileObj.body.trim())
+      throw Error(`Missing file content: ${filePath}`)
+    ;
+    return { ...fileObj.attributes, content: fileObj.body} as Page;
+  }
   }
 
 }
