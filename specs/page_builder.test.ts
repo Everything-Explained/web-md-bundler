@@ -53,6 +53,14 @@ tape('PageBuilder{}', t => {
       t.ok(err instanceof Error);
     });
   });
+  t.test('contructor() populates internal map with valid Pages.', t => {
+    const testFolder = `${mockFolder}/test_valid_directory`;
+    t.plan(1); const pb = new PageBuilder([testFolder], (err) => {
+      const values = Array.from(pb.fileData.values())[0].map(val => val.title);
+      t.same(values, ['testing the files', 'what is a love', 'what is a silence']);
+    });
+  });
+
 
   t.test('get areDirsValid throws an error with invalid directories.', t => {
     t.plan(1); new PageBuilder(['../invalid/path'], (err) => {
