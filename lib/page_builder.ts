@@ -1,9 +1,14 @@
-import { promises, existsSync, writeFile, exists } from 'fs';
+import { promises, existsSync, writeFile, exists, readFile } from 'fs';
 import frontMatter, { FrontMatterResult } from 'front-matter';
 import smap from 'source-map-support';
-import { basename as pathBasename, dirname as pathDirname, extname as pathExtname } from 'path';
+import { basename as pathBasename, extname as pathExtname } from 'path';
+import bunyan from 'bunyan';
 
 smap.install();
+
+const log = bunyan.createLogger({
+  name: 'builder'
+});
 
 
 
@@ -25,25 +30,111 @@ export class PageBuilder {
   private _dirs;
   /** Promisified File System */
   private _pfs     = promises;
-  private _dateNow = Date.now();
+  private _dateNow = new Date().toISOString();
 
   private _pageData    : Map<string, Page[]> = new Map();
   private _oldPageData : Map<string, Page[]> = new Map();
 
 
-  get fileData() { return this._pageData; }
+  get pages() { return this._pageData; }
+  get oldPages() { return this._oldPageData; }
 
 
   constructor(dirs: string[], onReady: (err: Error|null) => void) {
+    // log.info('initializing');
     try {
       this._dirs = dirs;
       this._validateDirs();
+      this._loadOldPages();
       this._loadMDFiles(onReady);
     }
     catch (err) { onReady(err); }
-    finally { this._dirs = dirs; } // shut the linter up
+    finally { this._dirs = dirs; } // shut the lang service up
   }
 
+
+  public updateFiles() {
+    for (const dir of this._dirs) {
+      const oldPages = this._oldPageData.get(dir)!;
+      const curPages = this._pageData.get(dir)!
+      ;
+      const hasAdded   = this._updAddedPages(curPages, oldPages);
+      const hasChanged = this._updChangedPages(curPages, oldPages);
+      const hasDeleted = this._updDeletedPages(curPages, oldPages)
+      ;
+      if (hasAdded || hasChanged || hasDeleted)
+        return this._savePages(dir)
+      ;
+      log.info('No Pages to Update');
+    }
+  }
+
+
+  private _savePages(dir: string) {
+    const pages = this._pageData.get(dir)!;
+    this._pfs.writeFile(`${dir}/${pathBasename(dir)}.json`, JSON.stringify(pages));
+  }
+
+  private _updAddedPages(curPages: Page[], oldPages: Page[]) {
+    let hasAdded = false
+    ;
+    for (const curPage of curPages) {
+      const oldPage = this._findPageInPages(curPage, oldPages);
+      if (!oldPage) {
+        // Hard-coded dates persist if applicable
+        curPage.date = curPage.date || this._dateNow;
+        log.info(`[added]: ${curPage.title}`);
+        hasAdded = true;
+      }
+    }
+    return hasAdded;
+  }
+
+  private _updChangedPages(curPages: Page[], oldPages: Page[]) {
+    let hasChanged = false
+    ;
+    for (const curPage of curPages) {
+      const oldPage = this._findPageInPages(curPage, oldPages);
+      if (!oldPage || oldPage.content == curPage.content) continue;
+      // Hard-coded dates persist if applicable
+      curPage.date = curPage.date || this._dateNow;
+      log.info(`[changed]: ${curPage.title}`);
+      hasChanged = true;
+    }
+    return hasChanged;
+  }
+
+  private _updDeletedPages(curPages: Page[], oldPages: Page[]) {
+    let hasDeleted = false
+    ;
+    for (let i = 0; i < oldPages.length; i++) {
+      const oldPage = oldPages[i];
+      const curPage = this._findPageInPages(oldPage, curPages);
+      if (curPage) continue
+      ;
+      oldPages.splice(i, 1);
+      log.info(`[deleted]: ${oldPage.title}`);
+      hasDeleted = true;
+    }
+    return hasDeleted;
+  }
+
+
+  private _findPageInPages(page: Page, pages: Page[]) {
+    return pages.find(p => p.title == page.title);
+  }
+
+  private async _loadOldPages() {
+    for (const dir of this._dirs) {
+      const filePath = `${dir}/${pathBasename(dir)}.json`;
+      if (!existsSync(filePath)) {
+        this._oldPageData.set(dir, []);
+        continue;
+      }
+      const file = (await this._pfs.readFile(filePath)).toString('utf-8');
+      this._oldPageData.set(dir, JSON.parse(file));
+    }
+  }
 
   private async _loadMDFiles(callback: (err: Error|null) => void) {
     try {
@@ -112,8 +203,6 @@ export class PageBuilder {
     if (!this._dirs.every(dir => existsSync(dir)))
       throw Error('One or more paths do NOT exist.')
     ;
-  }
-
   }
 
 }
