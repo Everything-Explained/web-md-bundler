@@ -24,21 +24,27 @@ export class PageBuilder {
 
   private _dirs;
   /** Promisified File System */
-  private _pfs = promises;
-  private _fileData: Map<string, Page[]> = new Map();
-  private _oldFileData: Map<string, Page[]> = new Map();
+  private _pfs     = promises;
+  private _dateNow = Date.now();
+
+  private _fileData    : Map<string, Page[]> = new Map();
+  private _oldFileData : Map<string, Page[]> = new Map();
+
+
+  get fileData() { return this._fileData; }
 
   get areDirsValid() {
     return this._dirs.every(dir => existsSync(dir));
   }
 
 
-  constructor(dirs: string[], public onReady: (err: Error|null) => void) {
+  constructor(dirs: string[], onReady: (err: Error|null) => void) {
     this._dirs = dirs;
-    this._loadMDFiles();
-   }
+    this._loadMDFiles(onReady);
+  }
 
-  async _loadMDFiles() {
+
+  private async _loadMDFiles(callback: (err: Error|null) => void) {
     try {
       if (!this._dirs.length) throw Error('Directory configuration is EMPTY.');
       if (!this.areDirsValid) throw Error('One or more paths do NOT exist.')
@@ -49,9 +55,9 @@ export class PageBuilder {
         const mdFileData = await this._getPagesFromFiles(mdFilePaths);
         this._fileData.set(dir, mdFileData);
       }
-      this.onReady(null);
+      callback(null);
     }
-    catch (err) { this.onReady(err); }
+    catch (err) { callback(err); }
   }
 
   private async _getPagesFromFiles(filePaths: string[]) {
