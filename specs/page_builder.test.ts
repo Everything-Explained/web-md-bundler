@@ -47,6 +47,12 @@ tape('PageBuilder{}', t => {
       t.ok(err instanceof Error);
     });
   });
+  t.test('contructor() throws an error when loaded file has missing content.', t => {
+    const testFolder = `${mockFolder}/test_missing_content`;
+    t.plan(1); new PageBuilder([testFolder], (err) => {
+      t.ok(err instanceof Error);
+    });
+  });
 
   t.test('get areDirsValid throws an error with invalid directories.', t => {
     t.plan(1); new PageBuilder(['../invalid/path'], (err) => {
