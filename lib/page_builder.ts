@@ -1,4 +1,4 @@
-import { promises, existsSync, writeFile } from 'fs';
+import { promises, existsSync, writeFile, exists } from 'fs';
 import frontMatter, { FrontMatterResult } from 'front-matter';
 import smap from 'source-map-support';
 import { basename as pathBasename, dirname as pathDirname, extname as pathExtname } from 'path';
@@ -28,27 +28,25 @@ export class PageBuilder {
   private _dateNow = Date.now();
 
   private _pageData    : Map<string, Page[]> = new Map();
-  private _oldFileData : Map<string, Page[]> = new Map();
+  private _oldPageData : Map<string, Page[]> = new Map();
 
 
   get fileData() { return this._pageData; }
 
-  get areDirsValid() {
-    return this._dirs.every(dir => existsSync(dir));
-  }
-
 
   constructor(dirs: string[], onReady: (err: Error|null) => void) {
-    this._dirs = dirs;
-    this._loadMDFiles(onReady);
+    try {
+      this._dirs = dirs;
+      this._validateDirs();
+      this._loadMDFiles(onReady);
+    }
+    catch (err) { onReady(err); }
+    finally { this._dirs = dirs; } // shut the linter up
   }
 
 
   private async _loadMDFiles(callback: (err: Error|null) => void) {
     try {
-      if (!this._dirs.length) throw Error('Directory configuration is EMPTY.');
-      if (!this.areDirsValid) throw Error('One or more paths do NOT exist.')
-      ;
       for (const dir of this._dirs) {
         const fileNames   = await this._pfs.readdir(dir);
         const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
@@ -106,6 +104,16 @@ export class PageBuilder {
     ;
     return { ...fileObj.attributes, content: fileObj.body} as Page;
   }
+
+  private _validateDirs() {
+    if (!this._dirs.length)
+      throw Error('Directory configuration is EMPTY.')
+    ;
+    if (!this._dirs.every(dir => existsSync(dir)))
+      throw Error('One or more paths do NOT exist.')
+    ;
+  }
+
   }
 
 }
