@@ -58,11 +58,10 @@ export class PageBuilder {
       const oldPages = this._oldPageData.get(dir)!;
       const curPages = this._pageData.get(dir)!
       ;
-      const hasAdded   = this._updAddedPages(curPages, oldPages);
       const hasChanged = this._updChangedPages(curPages, oldPages);
-      const hasDeleted = this._updDeletedPages(curPages, oldPages)
+      const hasDeleted = this._hasDeletedPages(curPages, oldPages)
       ;
-      if (hasAdded || hasChanged || hasDeleted)
+      if (hasChanged || hasDeleted)
         return this._savePages(dir)
       ;
       log.info('No Pages to Update');
@@ -75,43 +74,34 @@ export class PageBuilder {
     this._pfs.writeFile(`${dir}/${pathBasename(dir)}.json`, JSON.stringify(pages));
   }
 
-  private _updAddedPages(curPages: Page[], oldPages: Page[]) {
-    let hasAdded = false
-    ;
-    for (const curPage of curPages) {
-      const oldPage = this._findPageInPages(curPage, oldPages);
-      if (!oldPage) {
-        // Hard-coded dates persist if applicable
-        curPage.date = curPage.date || this._dateNow;
-        log.info(`[added]: ${curPage.title}`);
-        hasAdded = true;
-      }
-    }
-    return hasAdded;
-  }
-
   private _updChangedPages(curPages: Page[], oldPages: Page[]) {
     let hasChanged = false
     ;
     for (const curPage of curPages) {
       const oldPage = this._findPageInPages(curPage, oldPages);
-      if (!oldPage || oldPage.content == curPage.content) continue;
-      // Hard-coded dates persist if applicable
-      curPage.date = curPage.date || this._dateNow;
-      log.info(`[changed]: ${curPage.title}`);
-      hasChanged = true;
+      if (!oldPage || oldPage.content != curPage.content) {
+        // Hard-coded dates persist if applicable
+        curPage.date = curPage.date || this._dateNow;
+        hasChanged = true;
+      }
+      if (!oldPage) {
+        log.info(`[added]: ${curPage.title}`);
+        continue;
+      }
+      if (oldPage.content != curPage.content) {
+        log.info(`[modified]: ${curPage.title}`);
+      }
     }
     return hasChanged;
   }
 
-  private _updDeletedPages(curPages: Page[], oldPages: Page[]) {
+  private _hasDeletedPages(curPages: Page[], oldPages: Page[]) {
     let hasDeleted = false
     ;
-    for (let i = 0; i < oldPages.length; i++) {
-      const curPage = this._findPageInPages(oldPages[i], curPages);
-      if (curPage) continue
-      ;
-      log.info(`[deleted]: ${oldPages[i].title}`);
+    for (const oldPage of oldPages) {
+      const curPage = this._findPageInPages(oldPage, curPages);
+      if (curPage) continue;
+      log.info(`[deleted]: ${oldPage.title}`);
       hasDeleted = true;
     }
     return hasDeleted;
