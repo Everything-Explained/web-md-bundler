@@ -82,7 +82,9 @@ export class PageBuilder {
     ;
     for (const curPage of curPages) {
       const oldPage = this._findPageInPages(curPage, oldPages);
-      hasModifiedPages = this._updatePageDate(curPage, oldPage);
+      if (this._updatePageDate(curPage, oldPage))
+        hasModifiedPages = true
+      ;
       if (!oldPage) {
         if (!this.isDebugging)
           log.info(`[added]: ${curPage.title}`)
