@@ -56,7 +56,7 @@ export class PageBuilder {
   }
 
 
-  public updatePages() {
+  public async updatePages() {
     for (const dir of this._dirs) {
       const oldPages = this._oldPageData.get(dir)!;
       const curPages = this._pageData.get(dir)!
@@ -64,9 +64,9 @@ export class PageBuilder {
       const hasChanged = this._updChangedPages(curPages, oldPages);
       const hasDeleted = this._hasDeletedPages(curPages, oldPages)
       ;
-      if (hasChanged || hasDeleted)
-        return this._savePages(dir)
-      ;
+      if (hasChanged || hasDeleted) {
+        await this._savePages(dir); continue;
+      }
       if(!this.isDebugging) log.info('No Pages to Update');
     }
   }
@@ -74,7 +74,7 @@ export class PageBuilder {
 
   private _savePages(dir: string) {
     const pages = this._pageData.get(dir)!;
-    this._pfs.writeFile(`${dir}/${pathBasename(dir)}.json`, JSON.stringify(pages));
+    return this._pfs.writeFile(`${dir}/${pathBasename(dir)}.json`, JSON.stringify(pages, null, 2));
   }
 
   private _updChangedPages(curPages: Page[], oldPages: Page[]) {
