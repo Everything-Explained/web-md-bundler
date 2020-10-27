@@ -6,6 +6,7 @@ smap.install();
 
 
 const mockFolder = './specs/mocks';
+process.env.debugState = 'is-debugging'; // prevent logging
 
 tape('PageBuilder{}', t => {
 

@@ -31,19 +31,20 @@ export class PageBuilder {
 
   private _dirs;
   /** Promisified File System */
-  private _pfs     = promises;
-  private _dateNow: ISODateString = new Date().toISOString();
+  private _pfs = promises;
 
+  private _dateNow     : ISODateString = new Date().toISOString();
   private _pageData    : Map<string, Page[]> = new Map();
   private _oldPageData : Map<string, Page[]> = new Map();
 
 
-  get pages() { return this._pageData; }
-  get oldPages() { return this._oldPageData; }
+  get pages()       { return this._pageData; }
+  get oldPages()    { return this._oldPageData; }
+  get isDebugging() { return process.env.debugState == 'is-debugging'; }
 
 
   constructor(dirs: string[], onReady: (err: Error|null) => void) {
-    // log.info('initializing');
+    if (!this.isDebugging) log.info('initializing');
     try {
       this._dirs = dirs;
       this._validateDirs();
@@ -66,7 +67,7 @@ export class PageBuilder {
       if (hasChanged || hasDeleted)
         return this._savePages(dir)
       ;
-      log.info('No Pages to Update');
+      if(!this.isDebugging) log.info('No Pages to Update');
     }
   }
 
@@ -83,11 +84,15 @@ export class PageBuilder {
       const oldPage = this._findPageInPages(curPage, oldPages);
       hasChanged = this._updatePageDate(curPage, oldPage);
       if (!oldPage) {
-        log.info(`[added]: ${curPage.title}`);
+        if (!this.isDebugging)
+          log.info(`[added]: ${curPage.title}`)
+        ;
         continue;
       }
       if (oldPage.content != curPage.content) {
-        log.info(`[modified]: ${curPage.title}`);
+        if (!this.isDebugging)
+          log.info(`[modified]: ${curPage.title}`)
+        ;
       }
     }
     return hasChanged;
