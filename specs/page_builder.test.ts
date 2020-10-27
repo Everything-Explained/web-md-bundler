@@ -61,7 +61,7 @@ tape('PageBuilder{}', t => {
   t.test('constructor() populates internal map with valid Pages.', t => {
     const testFolder = `${mockFolder}/test_valid_directory`;
     t.plan(1); const pb = new PageBuilder([testFolder], (err) => {
-      const values = Array.from(pb.fileData.values())[0].map(val => val.title);
+      const values = Array.from(pb.pages.values())[0].map(val => val.title);
       t.same(values, ['testing the files', 'what is a love', 'what is a silence']);
     });
   });
