@@ -53,7 +53,7 @@ export class PageBuilder {
   }
 
 
-  public updateFiles() {
+  public updatePages() {
     for (const dir of this._dirs) {
       const oldPages = this._oldPageData.get(dir)!;
       const curPages = this._pageData.get(dir)!
@@ -108,12 +108,10 @@ export class PageBuilder {
     let hasDeleted = false
     ;
     for (let i = 0; i < oldPages.length; i++) {
-      const oldPage = oldPages[i];
-      const curPage = this._findPageInPages(oldPage, curPages);
+      const curPage = this._findPageInPages(oldPages[i], curPages);
       if (curPage) continue
       ;
-      oldPages.splice(i, 1);
-      log.info(`[deleted]: ${oldPage.title}`);
+      log.info(`[deleted]: ${oldPages[i].title}`);
       hasDeleted = true;
     }
     return hasDeleted;
