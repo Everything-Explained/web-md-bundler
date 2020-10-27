@@ -9,7 +9,7 @@ smap.install();
 
 
 const mockFolder = './specs/mocks';
-process.env.debugState = 'is-debugging'; // prevent logging
+process.env.testState = 'is-testing'; // prevent logging
 
 tape('PageBuilder{}', t => {
 
@@ -87,6 +87,28 @@ tape('PageBuilder{}', t => {
       // Cleanup
       writeFile(
         `${mockFolder}/test_add_page/test_add_page.json`,
+        JSON.stringify(oldPages, null, 2),
+        () => {return;}
+      );
+    });
+  });
+  t.test('updatePages() deletes pages if they do not exist in pages map.', t => {
+    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_delete_page`], async (err) => {
+      if (err) throw err;
+      const getPages = () => importFresh('./mocks/test_delete_page/test_delete_page.json') as Promise<typeof testAddPages>;
+      const oldPages = (await getPages());
+      const pageExistsTest1 = oldPages.find(page => page.title == 'test to delete this page');
+      await pb.updatePages();
+      const pageExistsTest2 = (await getPages()).find(page => page.title == 'test to delete this page');
+      const pagesFromMap = pb.pages.get(`${mockFolder}/test_delete_page`)
+      ;
+      t.isNot(pageExistsTest1,    undefined, 'page exists to delete');
+      t.is(pageExistsTest2,       undefined, 'page is deleted after update');
+      t.same(await getPages(), pagesFromMap, 'JSON file matches internal page map')
+      ;
+      // Cleanup
+      writeFile(
+        `${mockFolder}/test_delete_page/test_delete_page.json`,
         JSON.stringify(oldPages, null, 2),
         () => {return;}
       );
