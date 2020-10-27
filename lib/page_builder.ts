@@ -165,7 +165,7 @@ export class PageBuilder {
         continue;
       }
       if (oldPage.content != curPage.content) {
-        log.info(`[modified]: ${curPage.title}`);
+        this._log(`[modified]: ${curPage.title}`);
       }
     }
     return hasModifiedPages;
