@@ -75,14 +75,14 @@ tape('PageBuilder{}', t => {
       if (err) throw err;
       const getPages = () => importFresh('./mocks/test_add_page/test_add_page.json') as Promise<typeof testAddPages>;
       const oldPages = (await getPages());
-      const pageExistsTest1 = oldPages.find(page => page.title == 'added page');
+      const pageExistsTest1 = oldPages.find(page => page.title == 'test adding this page');
       await pb.updatePages();
-      const pageExistsTest2 = (await getPages()).find(page => page.title == 'added page');
+      const pageExistsTest2 = (await getPages()).find(page => page.title == 'test adding this page');
       const pagesFromMap = pb.pages.get(`${mockFolder}/test_add_page`)
       ;
       t.is(pageExistsTest1,    undefined,    'page does not already exist');
-      t.same(await getPages(), pagesFromMap, 'JSON file matches internal page map');
-      t.isNot(pageExistsTest2, undefined,    'page is saved after update')
+      t.isNot(pageExistsTest2, undefined,    'page is saved after update');
+      t.same(await getPages(), pagesFromMap, 'JSON file matches internal page map')
       ;
       // Cleanup
       writeFile(
