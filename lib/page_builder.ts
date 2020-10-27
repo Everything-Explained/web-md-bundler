@@ -80,7 +80,7 @@ export class PageBuilder {
     for (const curPage of curPages) {
       const oldPage = this._findPageInPages(curPage, oldPages);
       if (!oldPage || oldPage.content != curPage.content) {
-        // Hard-coded dates persist if applicable
+        // Preserves dateCreated or dateEdited use-cases
         curPage.date = curPage.date || this._dateNow;
         hasChanged = true;
       }
