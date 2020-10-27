@@ -1,6 +1,9 @@
 import tape from 'tape';
 import { PageBuilder } from '../lib/page_builder';
 import smap from 'source-map-support';
+import { writeFile } from 'fs';
+import importFresh from 'import-fresh';
+import testAddPages from './mocks/test_add_page/test_add_page.json';
 
 smap.install();
 
@@ -67,5 +70,26 @@ tape('PageBuilder{}', t => {
     });
   });
 
-
+  t.test('updatePages() adds pages if they do not exist in JSON file.', t => {
+    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_add_page`], async (err) => {
+      if (err) throw err;
+      const getPages = () => importFresh('./mocks/test_add_page/test_add_page.json') as Promise<typeof testAddPages>;
+      const oldPages = (await getPages());
+      const pageExistsTest1 = oldPages.find(page => page.title == 'added page');
+      await pb.updatePages();
+      const pageExistsTest2 = (await getPages()).find(page => page.title == 'added page');
+      const pagesFromMap = pb.pages.get(`${mockFolder}/test_add_page`)
+      ;
+      t.is(pageExistsTest1,    undefined,    'page does not already exist');
+      t.same(await getPages(), pagesFromMap, 'JSON file matches internal page map');
+      t.isNot(pageExistsTest2, undefined,    'page is saved after update')
+      ;
+      // Cleanup
+      writeFile(
+        `${mockFolder}/test_add_page/test_add_page.json`,
+        JSON.stringify(oldPages, null, 2),
+        () => {return;}
+      );
+    });
+  });
 });

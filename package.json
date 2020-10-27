@@ -21,6 +21,7 @@
     "@typescript-eslint/eslint-plugin": "^4.5.0",
     "@typescript-eslint/parser": "^4.5.0",
     "eslint": "^7.12.0",
+    "import-fresh": "^3.2.1",
     "nyc": "^15.1.0",
     "source-map-support": "^0.5.19",
     "tap-diff": "^0.1.1",
