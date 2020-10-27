@@ -11,11 +11,13 @@ const log = bunyan.createLogger({
 });
 
 
+type ISODateString = string;
 
 interface MDFormat {
   title: string;
   author: string;
-  date?: string;
+  /** Can be either a `dateCreated` or `dateEdited` property */
+  date?: ISODateString;
 }
 
 interface Page extends MDFormat {
@@ -30,7 +32,7 @@ export class PageBuilder {
   private _dirs;
   /** Promisified File System */
   private _pfs     = promises;
-  private _dateNow = new Date().toISOString();
+  private _dateNow: ISODateString = new Date().toISOString();
 
   private _pageData    : Map<string, Page[]> = new Map();
   private _oldPageData : Map<string, Page[]> = new Map();
@@ -79,11 +81,7 @@ export class PageBuilder {
     ;
     for (const curPage of curPages) {
       const oldPage = this._findPageInPages(curPage, oldPages);
-      if (!oldPage || oldPage.content != curPage.content) {
-        // Preserves dateCreated or dateEdited use-cases
-        curPage.date = curPage.date || this._dateNow;
-        hasChanged = true;
-      }
+      hasChanged = this._updatePageDate(curPage, oldPage);
       if (!oldPage) {
         log.info(`[added]: ${curPage.title}`);
         continue;
@@ -93,6 +91,20 @@ export class PageBuilder {
       }
     }
     return hasChanged;
+  }
+
+  private _updatePageDate(page: Page, oldPage: Page|undefined) {
+    const pageAddedOrChanged = !oldPage || oldPage.content != page.content;
+    if (pageAddedOrChanged) {
+      // Preserve dateCreated or dateEdited use-case
+      const updatedDate = page.date
+        ? new Date(page.date).toISOString()
+        : this._dateNow
+      ;
+      page.date = updatedDate;
+      return true;
+    }
+    return false;
   }
 
   private _hasDeletedPages(curPages: Page[], oldPages: Page[]) {
