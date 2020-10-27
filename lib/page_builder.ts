@@ -78,11 +78,11 @@ export class PageBuilder {
   }
 
   private _updChangedPages(curPages: Page[], oldPages: Page[]) {
-    let hasChanged = false
+    let hasModifiedPages = false
     ;
     for (const curPage of curPages) {
       const oldPage = this._findPageInPages(curPage, oldPages);
-      hasChanged = this._updatePageDate(curPage, oldPage);
+      hasModifiedPages = this._updatePageDate(curPage, oldPage);
       if (!oldPage) {
         if (!this.isDebugging)
           log.info(`[added]: ${curPage.title}`)
@@ -95,18 +95,18 @@ export class PageBuilder {
         ;
       }
     }
-    return hasChanged;
+    return hasModifiedPages;
   }
 
-  private _updatePageDate(page: Page, oldPage: Page|undefined) {
-    const pageAddedOrChanged = !oldPage || oldPage.content != page.content;
+  private _updatePageDate(curPage: Page, oldPage: Page|undefined) {
+    const pageAddedOrChanged = !oldPage || oldPage.content != curPage.content;
     if (pageAddedOrChanged) {
       // Preserve dateCreated or dateEdited use-case
-      const updatedDate = page.date
-        ? new Date(page.date).toISOString()
+      const updatedDate = curPage.date
+        ? new Date(curPage.date).toISOString()
         : this._dateNow
       ;
-      page.date = updatedDate;
+      curPage.date = updatedDate;
       return true;
     }
     return false;
