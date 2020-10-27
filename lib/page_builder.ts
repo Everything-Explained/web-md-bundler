@@ -38,13 +38,13 @@ export class PageBuilder {
   private _oldPageData : Map<string, Page[]> = new Map();
 
 
-  get pages()       { return this._pageData; }
-  get oldPages()    { return this._oldPageData; }
-  get isDebugging() { return process.env.debugState == 'is-debugging'; }
+  get pages()     { return this._pageData; }
+  get oldPages()  { return this._oldPageData; }
+  get isTesting() { return process.env.testState == 'is-testing'; }
 
 
   constructor(dirs: string[], onReady: (err: Error|null) => void) {
-    if (!this.isDebugging) log.info('initializing');
+    this._log('initializing');
     try {
       this._dirs = dirs;
       this._validateDirs();
@@ -67,7 +67,7 @@ export class PageBuilder {
       if (hasChanged || hasDeleted) {
         await this._savePages(dir); continue;
       }
-      if(!this.isDebugging) log.info('No Pages to Update');
+      if(!this.isTesting) log.info('No Pages to Update');
     }
   }
 
@@ -86,15 +86,11 @@ export class PageBuilder {
         hasModifiedPages = true
       ;
       if (!oldPage) {
-        if (!this.isDebugging)
-          log.info(`[added]: ${curPage.title}`)
-        ;
+        this._log(`[added]: ${curPage.title}`);
         continue;
       }
       if (oldPage.content != curPage.content) {
-        if (!this.isDebugging)
-          log.info(`[modified]: ${curPage.title}`)
-        ;
+        log.info(`[modified]: ${curPage.title}`);
       }
     }
     return hasModifiedPages;
@@ -120,12 +116,11 @@ export class PageBuilder {
     for (const oldPage of oldPages) {
       const curPage = this._findPageInPages(oldPage, curPages);
       if (curPage) continue;
-      log.info(`[deleted]: ${oldPage.title}`);
+      this._log(`[deleted]: ${oldPage.title}`);
       hasDeleted = true;
     }
     return hasDeleted;
   }
-
 
   private _findPageInPages(page: Page, pages: Page[]) {
     return pages.find(p => p.title == page.title);
@@ -210,6 +205,10 @@ export class PageBuilder {
     if (!this._dirs.every(dir => existsSync(dir)))
       throw Error('One or more paths do NOT exist.')
     ;
+  }
+
+  private _log(msg: string) {
+    if (!this.isTesting) log.info(msg);
   }
 
 }
