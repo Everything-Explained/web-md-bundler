@@ -190,4 +190,15 @@ tape('PageBuilder{}', t => {
       );
     });
   });
+  t.test('updatePages() throws an error if an invalid date exists in a page.', t => {
+    t.plan(1); const pb = new PageBuilder([`${mockFolder}/test_invalid_date`], async (err) => {
+      if (err) throw err;
+      try {
+        await pb.updatePages();
+        t.fail('should throw');
+      }
+      catch (err) { t.throws(() => { throw err; }); }
+    });
+  });
+
 });
