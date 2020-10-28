@@ -179,6 +179,9 @@ export class PageBuilder {
         ? new Date(curPage.date).toISOString()
         : this._dateNow
       ;
+      if (updatedDate.toString() == 'Invalid Date')
+        throw Error(`Invalid Date for the page titled: "${curPage.title}"`)
+      ;
       curPage.date = updatedDate;
       return true;
     }
