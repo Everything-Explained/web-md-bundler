@@ -65,6 +65,7 @@ export class PageBuilder {
 
   public async updatePages() {
     for (const dir of this._dirs) {
+      this._log(`[checking: ${this._shortenPath(dir)}]`);
       const oldPages = this._oldPageData.get(dir)!;
       const curPages = this._pageData.get(dir)!
       ;
