@@ -75,7 +75,7 @@ export class PageBuilder {
       if (hasChanged || hasDeleted) {
         await this._savePages(dir); continue;
       }
-      if(!this.isTesting) log.info('No Pages to Update');
+      this._log('No Pages to Update');
     }
   }
 
