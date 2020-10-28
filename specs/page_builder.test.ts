@@ -4,7 +4,7 @@ import smap from 'source-map-support';
 import { writeFile } from 'fs';
 import importFresh from 'import-fresh';
 import testAddPages from './mocks/test_add_page/test_add_page.json';
-import { sep, basename as pathBasename } from 'path';
+import { sep as pathSep, basename as pathBasename } from 'path';
 import fs from 'fs';
 
 smap.install();
@@ -85,7 +85,7 @@ tape('PageBuilder{}', t => {
       `${rootDir}/three`
     ];
     t.plan(1); const pb = new PageBuilder(testFolders, async (err) => {
-      const isAbsPath = (dir: string) => (!!~dir.indexOf(`:${sep}`));
+      const isAbsPath = (dir: string) => (!!~dir.indexOf(`:${pathSep}`));
       t.ok(pb.dirs.every(isAbsPath), 'contains root file directory');
     });
   });
@@ -105,6 +105,21 @@ tape('PageBuilder{}', t => {
     });
   });
 
+  t.test('updatePages() does not overwrite existing JSON file if there are no changes.', t => {
+    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_valid_directory`], async (err) => {
+      t.is(err, null, 'error should be null')
+      ;
+      const filePath = `${pb.dirs[0]}${pathSep}test_valid_directory.json`;
+      const oldPages = await getPages(filePath);
+      const oldModTime = (await fs.promises.stat(filePath)).mtimeMs;
+      await pb.updatePages();
+      const updPages = await getPages(filePath);
+      const updModTime = (await fs.promises.stat(filePath)).mtimeMs
+      ;
+      t.is(oldModTime, updModTime, 'same modified time');
+      t.same(updPages, oldPages, 'JSON file has not changed');
+    });
+  });
   t.test('updatePages() adds pages if they do not exist in JSON file.', t => {
     t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_add_page`], async (err) => {
       if (err) throw err;
