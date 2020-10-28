@@ -11,14 +11,41 @@ smap.install();
 
 
 const mockFolder = './specs/mocks';
-process.env.testState = 'is-testing'; // prevent logging
 
 const getPages = (path: string) => (
   importFresh(path) as Promise<typeof testAddPages>
 );
 
+const getLastStdout = () => {
+  const lastStr: string[] = [];
+  process.stdout.write = (function(write) {
+    return function(str: any) {
+      lastStr.push(str);
+      write.apply(process.stdout, [str]);
+      // we only want to execute this function once
+      process.stdout.write = write;
+      return true;
+    };
+  })(process.stdout.write);
+  return lastStr;
+};
+
 tape('PageBuilder{}', t => {
 
+  t.test('constructor() logs to console when env variable is not set to "is-testing"', t => {
+    const stdoutStr = getLastStdout();
+    t.plan(3); new PageBuilder([`${mockFolder}/test_valid_directory`], (err) => {
+      t.is(err, null, 'no errors occur');
+      const initMsg = JSON.parse(stdoutStr[0]).msg;
+      t.is(initMsg, 'initializing', 'log matches expected value')
+      ;
+      console.log('custom stdout function should not execute this');
+      t.is(stdoutStr.length, 1, 'write method reset')
+      ;
+      // Prevent logging for rest of tests
+      process.env.testState = 'is-testing';
+    });
+  });
   t.test('constructor() throws an error with empty directory array.', t => {
     t.plan(1); new PageBuilder([], (err) => {
       t.ok(err instanceof Error);
