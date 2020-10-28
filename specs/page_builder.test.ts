@@ -72,7 +72,7 @@ tape('PageBuilder{}', t => {
     const testFolder = `${mockFolder}/test_valid_directory`;
     t.plan(2); const pb = new PageBuilder([testFolder], (err) => {
       t.is(err, null, 'error should be null');
-      const values = Array.from(pb.pages.values())[0].map(val => val.title);
+      const values = Array.from(pb.pagesMap.values())[0].map(val => val.title);
       t.same(values, ['testing the files', 'what is a love', 'what is a silence']);
     });
   });
@@ -129,7 +129,7 @@ tape('PageBuilder{}', t => {
       await pb.updatePages();
       const updPages     = await getPages(filePath);
       const addedPage    = updPages.find(page => page.title == 'test adding this page');
-      const pagesFromMap = pb.pages.get(pb.dirs[0])
+      const pagesFromMap = pb.pagesMap.get(pb.dirs[0])
       ;
       t.is(     oldPage,    undefined, 'page does not already exist');
       t.isNot(addedPage,    undefined, 'page is saved after update');
@@ -152,7 +152,7 @@ tape('PageBuilder{}', t => {
       await pb.updatePages(); // file does not exist in directory
       const updPages     = await getPages(filePath);
       const deletedPage  = updPages.find(page => page.title == 'test to delete this page');
-      const pagesFromMap = pb.pages.get(pb.dirs[0])
+      const pagesFromMap = pb.pagesMap.get(pb.dirs[0])
       ;
       t.isNot( oldPage,    undefined, 'page exists to delete');
       t.is(deletedPage,    undefined, 'page is deleted after update');
@@ -175,7 +175,7 @@ tape('PageBuilder{}', t => {
       await pb.updatePages(); // file is changed in directory
       const updPages     = await getPages(filePath);
       const updPage      = updPages.find(page => page.title == 'page that changes');
-      const pagesFromMap = pb.pages.get(pb.dirs[0]);
+      const pagesFromMap = pb.pagesMap.get(pb.dirs[0]);
       const changedStr   = 'This content is now changed.'
       ;
       t.isNot(      oldPage,    undefined, 'page exists to change');

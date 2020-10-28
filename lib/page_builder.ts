@@ -46,8 +46,7 @@ export class PageBuilder {
 
   get dirs()      { return this._dirs; }
   get shortDirs() { return this._dirs.map(this._shortenPath); }
-  get pages()     { return this._pageData; }
-  get oldPages()  { return this._oldPageData; }
+  get pagesMap()     { return this._pageData; }
   get isTesting() { return process.env.testState == 'is-testing'; }
 
 
