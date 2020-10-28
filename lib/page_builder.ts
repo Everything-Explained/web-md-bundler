@@ -36,10 +36,10 @@ interface Page extends MDFormat {
 export class PageBuilder {
 
   /** Promisified File System */
-  private _pfs = promises;
+  private _pfs     = promises;
+  private _dateNow = new Date();
 
   private _dirs        : string[] = [];
-  private _dateNow     : ISODateString = new Date().toISOString();
   private _pageData    : Map<string, Page[]> = new Map();
   private _oldPageData : Map<string, Page[]> = new Map();
 
@@ -183,13 +183,13 @@ export class PageBuilder {
     if (pageAddedOrChanged) {
       // Preserve dateCreated or dateEdited use-case
       const updatedDate = curPage.date
-        ? new Date(curPage.date).toISOString()
+        ? new Date(curPage.date)
         : this._dateNow
       ;
       if (updatedDate.toString() == 'Invalid Date')
         throw Error(`Invalid Date for the page titled: "${curPage.title}"`)
       ;
-      curPage.date = updatedDate;
+      curPage.date = updatedDate.toISOString();
       return true;
     }
     return false;
