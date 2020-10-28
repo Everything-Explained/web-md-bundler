@@ -98,7 +98,7 @@ tape('PageBuilder{}', t => {
       const getPages = () => importFresh('./mocks/test_delete_page/test_delete_page.json') as Promise<typeof testAddPages>;
       const oldPages = (await getPages());
       const pageExistsTest1 = oldPages.find(page => page.title == 'test to delete this page');
-      await pb.updatePages();
+      await pb.updatePages(); // file does not exist in directory
       const pageExistsTest2 = (await getPages()).find(page => page.title == 'test to delete this page');
       const pagesFromMap = pb.pages.get(`${mockFolder}/test_delete_page`)
       ;
@@ -109,6 +109,32 @@ tape('PageBuilder{}', t => {
       // Cleanup
       writeFile(
         `${mockFolder}/test_delete_page/test_delete_page.json`,
+        JSON.stringify(oldPages, null, 2),
+        () => {return;}
+      );
+    });
+  });
+  t.test('updatePages() update pages if their content has changed.', t => {
+    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_change_page`], async (err) => {
+      if (err) throw err;
+      const getPages = () =>
+        importFresh('./mocks/test_change_page/test_change_page.json') as Promise<typeof testAddPages>
+      ;
+      const oldPages = await getPages();
+      const oldPage  = oldPages.find(page => page.title == 'page that changes');
+      await pb.updatePages(); // file is changed in directory
+      const updPages     = await getPages();
+      const newPage      = updPages.find(page => page.title == 'page that changes');
+      const pagesFromMap = pb.pages.get(`${mockFolder}/test_change_page`);
+      const changedStr   = 'This content is now changed.'
+      ;
+      t.isNot(      oldPage,    undefined, 'page exists to change');
+      t.is(newPage?.content,   changedStr, 'page content is changed after update');
+      t.same(      updPages, pagesFromMap, 'JSON file matches internal page map')
+      ;
+      // Cleanup
+      writeFile(
+        `${mockFolder}/test_change_page/test_change_page.json`,
         JSON.stringify(oldPages, null, 2),
         () => {return;}
       );

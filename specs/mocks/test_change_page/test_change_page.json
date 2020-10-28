@@ -1,0 +1,13 @@
+[
+  {
+    "title": "a page",
+    "author": "Aedaeum",
+    "content": "This file won't change.",
+    "date": "2020-10-27T23:48:02.300Z"
+  },
+  {
+    "title": "page that changes",
+    "author": "me",
+    "content": "This content will change."
+  }
+]
