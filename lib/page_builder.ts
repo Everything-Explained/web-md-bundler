@@ -45,6 +45,7 @@ export class PageBuilder {
 
 
   get dirs()      { return this._dirs; }
+  get shortDirs() { return this._dirs.map(this._shortenPath); }
   get pages()     { return this._pageData; }
   get oldPages()  { return this._oldPageData; }
   get isTesting() { return process.env.testState == 'is-testing'; }
@@ -213,6 +214,12 @@ export class PageBuilder {
   private _savePages(dir: string) {
     const pages = this._pageData.get(dir)!;
     return this._pfs.writeFile(`${dir}/${pathBasename(dir)}.json`, JSON.stringify(pages, null, 2));
+  }
+
+  private _shortenPath(dir: string) {
+    const splitPath = dir.split(pathSep);
+    const splitPathLen = splitPath.length;
+    return `${splitPath[splitPathLen - 2]}/${splitPath[splitPathLen - 1]}`;
   }
 
   private _log(msg: string) {
