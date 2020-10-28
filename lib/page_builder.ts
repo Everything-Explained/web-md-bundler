@@ -1,7 +1,13 @@
 import { promises, existsSync, writeFile, exists, readFile } from 'fs';
 import frontMatter, { FrontMatterResult } from 'front-matter';
 import smap from 'source-map-support';
-import { basename as pathBasename, extname as pathExtname } from 'path';
+import {
+  basename as pathBasename,
+  extname as pathExtname,
+  dirname as pathDirname,
+  normalize as pathNormalize,
+  resolve as pathResolve,
+  sep as pathSep } from 'path';
 import bunyan from 'bunyan';
 
 smap.install();
@@ -29,15 +35,16 @@ interface Page extends MDFormat {
 
 export class PageBuilder {
 
-  private _dirs;
   /** Promisified File System */
   private _pfs = promises;
 
+  private _dirs        : string[] = [];
   private _dateNow     : ISODateString = new Date().toISOString();
   private _pageData    : Map<string, Page[]> = new Map();
   private _oldPageData : Map<string, Page[]> = new Map();
 
 
+  get dirs()      { return this._dirs; }
   get pages()     { return this._pageData; }
   get oldPages()  { return this._oldPageData; }
   get isTesting() { return process.env.testState == 'is-testing'; }
@@ -46,13 +53,12 @@ export class PageBuilder {
   constructor(dirs: string[], onReady: (err: Error|null) => void) {
     this._log('initializing');
     try {
-      this._dirs = dirs;
+      this._dirs = dirs.map(dir => pathResolve(dir));
       this._validateDirs();
       this._loadOldPages();
       this._loadMDFiles(onReady);
     }
     catch (err) { onReady(err); }
-    finally { this._dirs = dirs; } // shut the lang service up
   }
 
 
@@ -82,7 +88,7 @@ export class PageBuilder {
 
   private async _loadOldPages() {
     for (const dir of this._dirs) {
-      const filePath = `${dir}/${pathBasename(dir)}.json`;
+      const filePath = `${dir}${pathSep}${pathBasename(dir)}.json`;
       if (!existsSync(filePath)) {
         this._oldPageData.set(dir, []);
         continue;
@@ -108,7 +114,7 @@ export class PageBuilder {
   private _filterMDFilePaths(dir: string, fileNames: string[]) {
     const mdFilePaths = fileNames
       .filter(name => pathExtname(name) == '.md')
-      .map(name => `${dir}/${name}`)
+      .map(name => `${dir}${pathSep}${name}`)
     ;
     if (!mdFilePaths.length)
       throw Error(`No .md files found @${dir}`)
