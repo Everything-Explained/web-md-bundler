@@ -1,5 +1,5 @@
 import tape from 'tape';
-import { PageBuilder } from '../lib/page_builder';
+import { Page, PageBuilder } from '../lib/page_builder';
 import smap from 'source-map-support';
 import { writeFile } from 'fs';
 import importFresh from 'import-fresh';
@@ -15,6 +15,10 @@ const mockFolder = './specs/mocks';
 const getPages = (path: string) => (
   importFresh(path) as Promise<typeof testAddPages>
 );
+
+const resetFileChanges = (path: string, pages: Page[]) => {
+  writeFile(path, JSON.stringify(pages, null, 2), () => {return;});
+};
 
 const getLastStdout = () => {
   const lastStr: string[] = [];
@@ -163,11 +167,7 @@ tape('PageBuilder{}', t => {
       t.same(  updPages, pagesFromMap, 'JSON file matches internal page map')
       ;
       // Cleanup
-      writeFile(
-        `${pb.dirs[0]}/test_add_page.json`,
-        JSON.stringify(oldPages, null, 2),
-        () => {return;}
-      );
+      resetFileChanges(filePath, oldPages);
     });
   });
   t.test('updatePages() deletes pages if they do not exist in JSON file.', t => {
@@ -186,11 +186,7 @@ tape('PageBuilder{}', t => {
       t.same( updPages, pagesFromMap, 'JSON file matches internal page map')
       ;
       // Cleanup
-      writeFile(
-        `${pb.dirs[0]}/test_delete_page.json`,
-        JSON.stringify(oldPages, null, 2),
-        () => {return;}
-      );
+      resetFileChanges(filePath, oldPages);
     });
   });
   t.test('updatePages() update pages if their content has changed.', t => {
@@ -210,11 +206,7 @@ tape('PageBuilder{}', t => {
       t.same(      updPages, pagesFromMap, 'JSON file matches internal page map')
       ;
       // Cleanup
-      writeFile(
-        `${pb.dirs[0]}/test_change_page.json`,
-        JSON.stringify(oldPages, null, 2),
-        () => {return;}
-      );
+      resetFileChanges(filePath, oldPages);
     });
   });
   t.test('updatePages() throws an error if an invalid date exists in a page.', t => {

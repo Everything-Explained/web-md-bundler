@@ -26,7 +26,7 @@ interface MDFormat {
   date?: ISODateString;
 }
 
-interface Page extends MDFormat {
+export interface Page extends MDFormat {
   content: string;
 }
 
