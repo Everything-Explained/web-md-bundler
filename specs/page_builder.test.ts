@@ -13,6 +13,10 @@ smap.install();
 const mockFolder = './specs/mocks';
 process.env.testState = 'is-testing'; // prevent logging
 
+const getPages = (path: string) => (
+  importFresh(path) as Promise<typeof testAddPages>
+);
+
 tape('PageBuilder{}', t => {
 
   t.test('constructor() throws an error with empty directory array.', t => {
@@ -104,13 +108,11 @@ tape('PageBuilder{}', t => {
   t.test('updatePages() adds pages if they do not exist in JSON file.', t => {
     t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_add_page`], async (err) => {
       if (err) throw err;
-      const getPages = () =>
-        importFresh(`${pb.dirs[0]}/test_add_page.json`) as Promise<typeof testAddPages>
-      ;
-      const oldPages = (await getPages());
+      const filePath = `${pb.dirs[0]}/test_add_page.json`;
+      const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'test adding this page');
       await pb.updatePages();
-      const updPages     = await getPages();
+      const updPages     = await getPages(filePath);
       const addedPage    = updPages.find(page => page.title == 'test adding this page');
       const pagesFromMap = pb.pages.get(pb.dirs[0])
       ;
@@ -129,13 +131,11 @@ tape('PageBuilder{}', t => {
   t.test('updatePages() deletes pages if they do not exist in JSON file.', t => {
     t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_delete_page`], async (err) => {
       if (err) throw err;
-      const getPages = () =>
-        importFresh(`${pb.dirs[0]}/test_delete_page.json`) as Promise<typeof testAddPages>
-      ;
-      const oldPages = await getPages();
+      const filePath = `${pb.dirs[0]}/test_delete_page.json`;
+      const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'test to delete this page');
       await pb.updatePages(); // file does not exist in directory
-      const updPages     = await getPages();
+      const updPages     = await getPages(filePath);
       const deletedPage  = updPages.find(page => page.title == 'test to delete this page');
       const pagesFromMap = pb.pages.get(pb.dirs[0])
       ;
@@ -154,13 +154,11 @@ tape('PageBuilder{}', t => {
   t.test('updatePages() update pages if their content has changed.', t => {
     t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_change_page`], async (err) => {
       if (err) throw err;
-      const getPages = () =>
-        importFresh(`${pb.dirs[0]}/test_change_page.json`) as Promise<typeof testAddPages>
-      ;
-      const oldPages = await getPages();
+      const filePath = `${pb.dirs[0]}/test_change_page.json`;
+      const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'page that changes');
       await pb.updatePages(); // file is changed in directory
-      const updPages     = await getPages();
+      const updPages     = await getPages(filePath);
       const updPage      = updPages.find(page => page.title == 'page that changes');
       const pagesFromMap = pb.pages.get(pb.dirs[0]);
       const changedStr   = 'This content is now changed.'
