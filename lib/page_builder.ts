@@ -4,11 +4,10 @@ import smap from 'source-map-support';
 import {
   basename as pathBasename,
   extname as pathExtname,
-  dirname as pathDirname,
-  normalize as pathNormalize,
   resolve as pathResolve,
   sep as pathSep } from 'path';
 import bunyan from 'bunyan';
+import importFresh from 'import-fresh';
 
 smap.install();
 
@@ -50,15 +49,14 @@ export class PageBuilder {
   get isTesting() { return process.env.testState == 'is-testing'; }
 
 
-  constructor(dirs: string[], onReady: (err: Error|null) => void) {
+  constructor(dirs: string[], callback: (err: Error|null) => void) {
     this._log('initializing');
     try {
       this._dirs = dirs.map(dir => pathResolve(dir));
       this._validateDirs();
-      this._loadOldPages();
-      this._loadMDFiles(onReady);
+      this._loadAllFiles(callback);
     }
-    catch (err) { onReady(err); }
+    catch (err) { callback(err); }
   }
 
 
@@ -87,6 +85,15 @@ export class PageBuilder {
     ;
   }
 
+  private async _loadAllFiles(callback: (err: Error|null) => void) {
+    try {
+      await this._loadOldPages();
+      await this._loadCurrentPages();
+      callback(null);
+    }
+    catch (err) { callback(err); }
+  }
+
   private async _loadOldPages() {
     for (const dir of this._dirs) {
       const filePath = `${dir}${pathSep}${pathBasename(dir)}.json`;
@@ -94,22 +101,18 @@ export class PageBuilder {
         this._oldPageData.set(dir, []);
         continue;
       }
-      const file = (await this._pfs.readFile(filePath)).toString('utf-8');
-      this._oldPageData.set(dir, JSON.parse(file));
+      const pages = (await importFresh(filePath)) as Page[];
+      this._oldPageData.set(dir, pages);
     }
   }
 
-  private async _loadMDFiles(callback: (err: Error|null) => void) {
-    try {
-      for (const dir of this._dirs) {
-        const fileNames   = await this._pfs.readdir(dir);
-        const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
-        const pages       = await this._getPagesFromFiles(mdFilePaths);
-        this._pageData.set(dir, pages);
-      }
-      callback(null);
+  private async _loadCurrentPages() {
+    for (const dir of this._dirs) {
+      const fileNames   = await this._pfs.readdir(dir);
+      const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
+      const pages       = await this._getPagesFromFiles(mdFilePaths);
+      this._pageData.set(dir, pages);
     }
-    catch (err) { callback(err); }
   }
 
   private _filterMDFilePaths(dir: string, fileNames: string[]) {
