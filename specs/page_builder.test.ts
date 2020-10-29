@@ -152,7 +152,7 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('updatePages() adds pages if they do not exist in JSON file.', t => {
-    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_add_page`], async (err) => {
+    t.plan(4); const pb = new PageBuilder([`${mockFolder}/test_add_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_add_page.json`;
       const oldPages = await getPages(filePath);
@@ -160,11 +160,13 @@ tape('PageBuilder{}', t => {
       await pb.updatePages();
       const updPages     = await getPages(filePath);
       const addedPage    = updPages.find(page => page.title == 'test adding this page');
-      const pagesFromMap = pb.pagesMap.get(pb.dirs[0])
+      const pagesFromMap = pb.pagesMap.get(pb.dirs[0])!;
+      const pageHasDate  = !!addedPage?.date
       ;
-      t.is(     oldPage,    undefined, 'page does not already exist');
-      t.isNot(addedPage,    undefined, 'page is saved after update');
-      t.same(  updPages, pagesFromMap, 'JSON file matches internal page map')
+      t.is   (oldPage,     undefined,    'page does not already exist');
+      t.isNot(addedPage,   undefined,    'page is saved after update');
+      t.same (updPages,    pagesFromMap, 'JSON file matches internal page map');
+      t.ok   (pageHasDate,               'added page has a date')
       ;
       // Cleanup
       resetFileChanges(filePath, oldPages);
@@ -190,7 +192,7 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('updatePages() update pages if their content has changed.', t => {
-    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_change_page`], async (err) => {
+    t.plan(4); const pb = new PageBuilder([`${mockFolder}/test_change_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_change_page.json`;
       const oldPages = await getPages(filePath);
@@ -200,10 +202,12 @@ tape('PageBuilder{}', t => {
       const updPage      = updPages.find(page => page.title == 'page that changes');
       const pagesFromMap = pb.pagesMap.get(pb.dirs[0]);
       const changedStr   = 'This content is now changed.'
+      const pageHasDate  = !!updPage?.date
       ;
-      t.isNot(      oldPage,    undefined, 'page exists to change');
-      t.is(updPage?.content,   changedStr, 'page content is changed after update');
-      t.same(      updPages, pagesFromMap, 'JSON file matches internal page map')
+      t.isNot(oldPage,          undefined,    'page exists to change');
+      t.is   (updPage?.content, changedStr,   'page content is changed after update');
+      t.same (updPages,         pagesFromMap, 'JSON file matches internal page map');
+      t.ok   (pageHasDate,                    'updated page has a date')
       ;
       // Cleanup
       resetFileChanges(filePath, oldPages);
