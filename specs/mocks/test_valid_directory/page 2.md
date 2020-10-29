@@ -1,5 +1,5 @@
 ---
-title: what is a love
-author: Aedaeum
+title: page 2
+author: me
 ---
 Some content that will be extracted as the body.

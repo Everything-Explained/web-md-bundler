@@ -1,1 +1,20 @@
-[{"title":"testing the files","author":"Aedaeum","date":"4/15/2007","content":"Some content that will be extracted as the body."},{"title":"what is a love","author":"Aedaeum","content":"Some content that will be extracted as the body."},{"title":"what is a silence","author":"Aedaeum","content":"Some content that will be extracted as the body."}]
+[
+  {
+    "title": "page 1",
+    "author": "me",
+    "content": "Some content that will be extracted as the body.",
+    "date": "2020-10-29T01:14:32.557Z"
+  },
+  {
+    "title": "page 2",
+    "author": "me",
+    "content": "Some content that will be extracted as the body.",
+    "date": "2020-10-29T01:14:32.557Z"
+  },
+  {
+    "title": "page 3",
+    "author": "me",
+    "date": "2007-04-15T07:00:00.000Z",
+    "content": "Some content that will be extracted as the body."
+  }
+]

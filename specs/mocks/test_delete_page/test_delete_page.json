@@ -2,12 +2,13 @@
   {
     "title": "one page",
     "author": "Aedaeum",
-    "content": "This should be the only file."
+    "content": "This should be the only file.",
+    "date": "2020-10-29T01:09:56.509Z"
   },
   {
-    "title": "test to delete this page",
-    "author": "Aedaeum",
-    "content": "This file should be deleted during the operation.",
-    "date": "2020-10-27T22:39:54.175Z"
+    "title": "page to delete",
+    "author": "me",
+    "content": "Hello dollies",
+    "date": "2020-10-29T01:09:56.509Z"
   }
 ]

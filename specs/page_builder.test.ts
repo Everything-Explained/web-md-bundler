@@ -104,7 +104,7 @@ tape('PageBuilder{}', t => {
     t.plan(2); const pb = new PageBuilder([testFolder], (err) => {
       t.is(err, null, 'error should be null');
       const values = Array.from(pb.pagesMap.values())[0].map(val => val.title);
-      t.same(values, ['testing the files', 'what is a love', 'what is a silence']);
+      t.same(values, ['page 1', 'page 2', 'page 3']);
     });
   });
 
@@ -177,10 +177,10 @@ tape('PageBuilder{}', t => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_delete_page.json`;
       const oldPages = await getPages(filePath);
-      const oldPage  = oldPages.find(page => page.title == 'test to delete this page');
+      const oldPage  = oldPages.find(page => page.title == 'page to delete');
       await pb.updatePages(); // file does not exist in directory
       const updPages     = await getPages(filePath);
-      const deletedPage  = updPages.find(page => page.title == 'test to delete this page');
+      const deletedPage  = updPages.find(page => page.title == 'page to delete');
       const pagesFromMap = pb.pagesMap.get(pb.dirs[0])
       ;
       t.isNot( oldPage,    undefined, 'page exists to delete');
@@ -201,7 +201,7 @@ tape('PageBuilder{}', t => {
       const updPages     = await getPages(filePath);
       const updPage      = updPages.find(page => page.title == 'page that changes');
       const pagesFromMap = pb.pagesMap.get(pb.dirs[0]);
-      const changedStr   = 'This content is now changed.'
+      const changedStr   = 'This content has changed.';
       const pageHasDate  = !!updPage?.date
       ;
       t.isNot(oldPage,          undefined,    'page exists to change');

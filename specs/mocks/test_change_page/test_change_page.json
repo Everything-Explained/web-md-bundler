@@ -3,11 +3,12 @@
     "title": "a page",
     "author": "Aedaeum",
     "content": "This file won't change.",
-    "date": "2020-10-27T23:48:02.300Z"
+    "date": "2020-10-28T23:58:31.836Z"
   },
   {
     "title": "page that changes",
     "author": "me",
-    "content": "This content will change."
+    "content": "This content will change.",
+    "date": "2020-10-28T23:58:31.836Z"
   }
 ]
