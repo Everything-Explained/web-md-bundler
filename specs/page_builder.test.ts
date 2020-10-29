@@ -99,6 +99,14 @@ tape('PageBuilder{}', t => {
       t.ok(err instanceof Error);
     });
   });
+  t.test('constructor() aggregates page dates during load operation.', t => {
+    t.plan(1); const pb = new PageBuilder([`${mockFolder}/test_valid_directory`], (err) => {
+      const filePath = pb.dirs[0];
+      const pages = pb.pagesMap.get(filePath)!;
+      const pagesHaveDates = pages.every(p => !!p.date);
+      t.ok(pagesHaveDates);
+    });
+  });
   t.test('constructor() populates internal map with valid Pages.', t => {
     const testFolder = `${mockFolder}/test_valid_directory`;
     t.plan(2); const pb = new PageBuilder([testFolder], (err) => {
