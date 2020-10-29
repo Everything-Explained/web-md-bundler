@@ -45,7 +45,7 @@ export class PageBuilder {
 
   get dirs()      { return this._dirs; }
   get shortDirs() { return this._dirs.map(this._shortenPath); }
-  get pagesMap()     { return this._pageData; }
+  get pagesMap()  { return this._pageData; }
   get isTesting() { return process.env.testState == 'is-testing'; }
 
 
@@ -54,7 +54,7 @@ export class PageBuilder {
     try {
       this._dirs = dirs.map(dir => pathResolve(dir));
       this._validateDirs();
-      this._loadAllFiles(callback);
+      this._loadAllPages(callback);
     }
     catch (err) { callback(err); }
   }
@@ -85,10 +85,12 @@ export class PageBuilder {
     ;
   }
 
-  private async _loadAllFiles(callback: (err: Error|null) => void) {
+  private async _loadAllPages(callback: (err: Error|null) => void) {
     try {
       await this._loadOldPages();
-      await this._loadCurrentPages();
+      await this._loadLatestPages();
+      // Hard-coding dates depends on use-case
+      this._aggregatePageDates();
       callback(null);
     }
     catch (err) { callback(err); }
@@ -106,12 +108,25 @@ export class PageBuilder {
     }
   }
 
-  private async _loadCurrentPages() {
+  private async _loadLatestPages() {
     for (const dir of this._dirs) {
       const fileNames   = await this._pfs.readdir(dir);
       const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
       const pages       = await this._getPagesFromFiles(mdFilePaths);
       this._pageData.set(dir, pages);
+    }
+  }
+
+  private _aggregatePageDates() {
+    for (const dir of this._dirs) {
+      const curPages = this._pageData.get(dir)!;
+      const oldPages = this._oldPageData.get(dir)!
+      ;
+      curPages.forEach(curPage => {
+        if (curPage.date) return;
+        const oldPage = this._findPageInPages(curPage, oldPages);
+        curPage.date = oldPage ? oldPage.date : curPage.date;
+      });
     }
   }
 
