@@ -1,5 +1,5 @@
-import { promises, existsSync, writeFile, exists, readFile } from 'fs';
-import frontMatter, { FrontMatterResult } from 'front-matter';
+import { promises, existsSync } from 'fs';
+import frontMatter from 'front-matter';
 import smap from 'source-map-support';
 import {
   basename as pathBasename,
@@ -72,13 +72,13 @@ export class PageBuilder {
       if (hasChanged || hasDeleted) {
         await this._savePages(dir); continue;
       }
-      this._log('No Pages to Update');
+      this._log('Pages are up to date!');
     }
   }
 
   private _validateDirs() {
     if (!this._dirs.length)
-      throw Error('Directory configuration is EMPTY.')
+      throw Error('Path configuration is EMPTY.')
     ;
     if (!this._dirs.every(dir => existsSync(dir)))
       throw Error('One or more paths do NOT exist.')
@@ -136,7 +136,7 @@ export class PageBuilder {
       .map(name => `${dir}${pathSep}${name}`)
     ;
     if (!mdFilePaths.length)
-      throw Error(`No .md files found @${dir}`)
+      throw Error(`No .md files found @${this._shortenPath(dir)}`)
     ;
     return mdFilePaths;
   }
@@ -158,21 +158,22 @@ export class PageBuilder {
   }
 
   private _fileToPage(filePath: string, file: string) {
+    const shortFilePath = this._shortenPath(filePath);
     if (!frontMatter.test(file))
-      throw Error(`Invalid or Missing front matter: ${filePath}`)
+      throw Error(`Invalid or Missing front matter: "${shortFilePath}"`)
     ;
     const fileObj = frontMatter<MDFormat>(file);
     if (!fileObj.attributes.title)
-      throw Error(`File is missing a title: ${filePath}`)
+      throw Error(`File is missing a title: "${shortFilePath}"`)
     ;
     if (fileObj.attributes.title != pathBasename(filePath, '.md'))
-      throw Error(`Title does not match file name: ${filePath}`)
+      throw Error(`Title does not match file name: "${shortFilePath}"`)
     ;
     if (!fileObj.attributes.author)
-      throw Error(`Missing Author: ${filePath}`)
+      throw Error(`Missing Author: "${shortFilePath}"`)
     ;
     if (!fileObj.body.trim())
-      throw Error(`Missing file content: ${filePath}`)
+      throw Error(`Missing file content: "${shortFilePath}"`)
     ;
     return { ...fileObj.attributes, content: fileObj.body} as Page;
   }
