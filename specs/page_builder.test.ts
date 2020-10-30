@@ -37,9 +37,9 @@ const getLastStdout = () => {
 const getOldPageStates = async (dirs: string[]) => {
   const vars: [string, Page[], Page, Page][] = [];
   for (const dir of dirs) {
-    const filePath    = `${dir}/${pathBasename(dir)}.json`;
-    const oldPages    = await getPages(filePath);
-    const oldPage     = oldPages.find(page => page.title == 'page to change')!;
+    const filePath   = `${dir}/${pathBasename(dir)}.json`;
+    const oldPages   = await getPages(filePath);
+    const oldPage    = oldPages.find(page => page.title == 'page to change')!;
     const staticPage = oldPages.find(page => page.title == 'existing page')!;
     vars.push([filePath, oldPages, oldPage, staticPage]);
   }
@@ -111,14 +111,13 @@ tape('PageBuilder{}', t => {
       t.ok(err instanceof Error);
     });
   });
-  t.test('constructor() aggregates page dates during load operation.', t => {
-    t.plan(1); const pb = new PageBuilder([`${mockFolder}/test_valid_directory`], (err) => {
-      const filePath = pb.dirs[0];
-      const pages = pb.pagesMap.get(filePath)!;
-      const pagesHaveDates = pages.every(p => !!p.date);
-      t.ok(pagesHaveDates);
+  t.test('constructor() throws an error when loaded file has invalid static date.', t => {
+    const testFolder = `${mockFolder}/test_invalid_date`;
+    t.plan(1); new PageBuilder([testFolder], (err) => {
+      t.ok(err instanceof Error);
     });
   });
+
   t.test('constructor() populates internal map with valid Pages.', t => {
     const testFolder = `${mockFolder}/test_valid_directory`;
     t.plan(2); const pb = new PageBuilder([testFolder], (err) => {
@@ -169,6 +168,28 @@ tape('PageBuilder{}', t => {
       ;
       t.is(oldModTime, updModTime, 'same modified time');
       t.same(updPages, oldPages, 'JSON file has not changed');
+    });
+  });
+  t.test('updatePages() aggregates page dates during save operation.', t => {
+    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_date_aggregation`], async (err) => {
+      if (err) throw err;
+      const filePath = `${pb.dirs[0]}${pathSep}test_date_aggregation.json`;
+      const oldPages = await getPages(filePath);
+      const oldPageWithDate = oldPages.find(page => page.title == 'static page with date')!;
+      const oldPageNoDate   = oldPages.find(page => page.title == 'static page with no date')!;
+      await pb.updatePages(); // file is changed in directory
+      const updPages = await getPages(filePath);
+      const doPagesHaveDates = updPages.every(page => !!page.date);
+      const updPageWithDate  = updPages.find(page => page.title == 'static page with date')!;
+      const updPageNoDate    = oldPages.find(page => page.title == 'static page with no date')!;
+
+
+      t.ok(doPagesHaveDates, 'all pages have dates');
+      t.is(oldPageWithDate.date, updPageWithDate.date, 'static date is retained');
+      t.is(oldPageNoDate.date, updPageNoDate.date,     'dynamic date is retained');
+
+      // Cleanup
+      resetFileChanges(filePath, oldPages);
     });
   });
   t.test('updatePages() adds pages if they do not exist in JSON file.', t => {
@@ -233,16 +254,6 @@ tape('PageBuilder{}', t => {
       ;
       // Cleanup
       resetFileChanges(filePath, oldPages);
-    });
-  });
-  t.test('updatePages() throws an error if an invalid date exists in a page.', t => {
-    t.plan(1); const pb = new PageBuilder([`${mockFolder}/test_invalid_date`], async (err) => {
-      if (err) throw err;
-      try {
-        await pb.updatePages();
-        t.fail('should throw');
-      }
-      catch (err) { t.throws(() => { throw err; }); }
     });
   });
   t.test('updatePages() updates all pages in all specified directories.', t => {

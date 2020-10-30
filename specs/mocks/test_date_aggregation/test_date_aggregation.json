@@ -1,0 +1,14 @@
+[
+  {
+    "title": "static page with date",
+    "author": "me",
+    "date": "2011-01-11T08:00:00.000Z",
+    "content": "Some content."
+  },
+  {
+    "title": "static page with no date",
+    "author": "me",
+    "content": "Some content.",
+    "date": "2020-10-30T22:12:13.260Z"
+  }
+]
