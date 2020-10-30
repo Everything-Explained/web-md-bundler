@@ -71,6 +71,7 @@ export class PageBuilder {
       const hasDeleted = this._isDeletingPages(curPages, oldPages)
       ;
       if (hasChanged || hasDeleted) {
+        this._aggregatePageDates(dir);
         await this._savePages(dir); continue;
       }
       this._log('Pages are up to date!');
@@ -90,8 +91,6 @@ export class PageBuilder {
     try {
       await this._loadOldPages();
       await this._loadLatestPages();
-      // Hard-coding dates depends on use-case
-      this._aggregatePageDates();
       callback(null);
     }
     catch (err) { callback(err); }
@@ -118,17 +117,15 @@ export class PageBuilder {
     }
   }
 
-  private _aggregatePageDates() {
-    for (const dir of this._dirs) {
-      const curPages = this._pageData.get(dir)!;
-      const oldPages = this._oldPageData.get(dir)!
-      ;
-      curPages.forEach(curPage => {
-        if (curPage.date) return;
-        const oldPage = this._findPageInPages(curPage, oldPages);
-        curPage.date = oldPage ? oldPage.date : curPage.date;
-      });
-    }
+  private _aggregatePageDates(dir: string) {
+    const curPages = this._pageData.get(dir)!;
+    const oldPages = this._oldPageData.get(dir)!
+    ;
+    curPages.forEach(curPage => {
+      if (curPage.date) return;
+      const oldPage = this._findPageInPages(curPage, oldPages);
+      curPage.date = oldPage ? oldPage.date : curPage.date;
+    });
   }
 
   private _filterMDFilePaths(dir: string, fileNames: string[]) {
