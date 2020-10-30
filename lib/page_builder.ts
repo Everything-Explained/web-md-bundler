@@ -5,6 +5,7 @@ import {
   basename as pathBasename,
   extname as pathExtname,
   resolve as pathResolve,
+  join    as pathJoin,
   sep as pathSep } from 'path';
 import bunyan from 'bunyan';
 import importFresh from 'import-fresh';
@@ -50,7 +51,7 @@ export class PageBuilder {
 
 
   constructor(dirs: string[], callback: (err: Error|null) => void) {
-    this._log('initializing');
+    this._log('Initializing');
     try {
       this._dirs = dirs.map(dir => pathResolve(dir));
       this._validateDirs();
@@ -62,11 +63,11 @@ export class PageBuilder {
 
   public async updatePages() {
     for (const dir of this._dirs) {
-      this._log(`[checking: ${this._shortenPath(dir)}]`);
+      this._log(`[processing: ${this._shortenPath(dir)}]`);
       const oldPages = this._oldPageData.get(dir)!;
       const curPages = this._pageData.get(dir)!
       ;
-      const hasChanged = this._isUpdatingPages(curPages, oldPages);
+      const hasChanged = this._isUpdatingPages(curPages, oldPages, dir);
       const hasDeleted = this._isDeletingPages(curPages, oldPages)
       ;
       if (hasChanged || hasDeleted) {
@@ -178,29 +179,30 @@ export class PageBuilder {
     return { ...fileObj.attributes, content: fileObj.body} as Page;
   }
 
-  private _isUpdatingPages(curPages: Page[], oldPages: Page[]) {
+  private _isUpdatingPages(curPages: Page[], oldPages: Page[], pageDir: string) {
     let hasModifiedPages = false
     ;
     for (const curPage of curPages) {
-      const oldPage = this._findPageInPages(curPage, oldPages);
+      const pagePath = this._shortenPath(pathJoin(pageDir, `${curPage.title}.md`));
+      const oldPage  = this._findPageInPages(curPage, oldPages);
       if (!oldPage) {
-        this._normalizePageDate(curPage);
-        this._log(`[added]: ${curPage.title}`);
+        this._normalizePageDate(curPage, pagePath);
+        this._log(`[ADD]: ${curPage.title}.md`);
         hasModifiedPages = true; continue;
       }
       if (curPage.content != oldPage.content) {
         curPage.date = this._dateNow.toISOString();
-        this._log(`[modified]: ${curPage.title}`);
+        this._log(`[CHG]: ${curPage.title}.md`);
         hasModifiedPages = true;
       }
     }
     return hasModifiedPages;
   }
 
-  private _normalizePageDate(page: Page) {
+  private _normalizePageDate(page: Page, pagePath: string) {
     const dateObj = page.date ? new Date(page.date) : this._dateNow;
     if (dateObj.toString() == 'Invalid Date')
-      throw Error(`Invalid Date for the page titled: "${page.title}"`)
+      throw Error(`Invalid Date for the page: "${pagePath}"`)
     ;
     page.date = dateObj.toISOString();
   }

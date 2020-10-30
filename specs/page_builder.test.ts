@@ -53,7 +53,7 @@ tape('PageBuilder{}', t => {
     t.plan(3); new PageBuilder([`${mockFolder}/test_valid_directory`], (err) => {
       t.is(err, null, 'no errors occur');
       const initMsg = JSON.parse(stdoutStr[0]).msg;
-      t.is(initMsg, 'initializing', 'log matches expected value')
+      t.is(initMsg, 'Initializing', 'log matches expected value')
       ;
       console.log('custom stdout function should not execute this');
       t.is(stdoutStr.length, 1, 'write method reset')
