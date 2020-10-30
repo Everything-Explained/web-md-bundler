@@ -67,7 +67,7 @@ export class PageBuilder {
       const oldPages = this._oldPageData.get(dir)!;
       const curPages = this._pageData.get(dir)!
       ;
-      const hasChanged = this._isUpdatingPages(curPages, oldPages, dir);
+      const hasChanged = this._isUpdatingPages(curPages, oldPages);
       const hasDeleted = this._isDeletingPages(curPages, oldPages)
       ;
       if (hasChanged || hasDeleted) {
@@ -161,34 +161,40 @@ export class PageBuilder {
       throw Error(`Invalid or Missing front matter: "${shortFilePath}"`)
     ;
     const fileObj = frontMatter<MDFormat>(file);
-    if (!fileObj.attributes.title)
+    const {title, author, date} = fileObj.attributes;
+    if (!title)
       throw Error(`File is missing a title: "${shortFilePath}"`)
     ;
-    if (fileObj.attributes.title != pathBasename(filePath, '.md'))
+    if (title != pathBasename(filePath, '.md'))
       throw Error(`Title does not match file name: "${shortFilePath}"`)
     ;
-    if (!fileObj.attributes.author)
+    if (!author)
       throw Error(`Missing Author: "${shortFilePath}"`)
     ;
+    if (date) {
+      if (!Date.parse(date || ''))
+        throw Error(`Invalid Date for page: "${shortFilePath}"`)
+      ;
+      fileObj.attributes.date = new Date(date).toISOString();
+    }
     if (!fileObj.body.trim())
       throw Error(`Missing file content: "${shortFilePath}"`)
     ;
     return { ...fileObj.attributes, content: fileObj.body} as Page;
   }
 
-  private _isUpdatingPages(curPages: Page[], oldPages: Page[], pageDir: string) {
+  private _isUpdatingPages(curPages: Page[], oldPages: Page[]) {
     let hasModifiedPages = false
     ;
     for (const curPage of curPages) {
-      const pagePath = this._shortenPath(pathJoin(pageDir, `${curPage.title}.md`));
       const oldPage  = this._findPageInPages(curPage, oldPages);
       if (!oldPage) {
-        this._normalizePageDate(curPage, pagePath);
+        curPage.date = this._normalizeDate(curPage.date);
         this._log(`[ADD]: ${curPage.title}.md`);
         hasModifiedPages = true; continue;
       }
       if (curPage.content != oldPage.content) {
-        curPage.date = this._dateNow.toISOString();
+        curPage.date = this._normalizeDate(curPage.date);
         this._log(`[CHG]: ${curPage.title}.md`);
         hasModifiedPages = true;
       }
@@ -196,12 +202,12 @@ export class PageBuilder {
     return hasModifiedPages;
   }
 
-  private _normalizePageDate(page: Page, pagePath: string) {
-    const dateObj = page.date ? new Date(page.date) : this._dateNow;
-    if (dateObj.toString() == 'Invalid Date')
-      throw Error(`Invalid Date for the page: "${pagePath}"`)
-    ;
-    page.date = dateObj.toISOString();
+  private _normalizeDate(date: string|undefined) {
+    return (
+      date
+        ? new Date(date).toISOString()
+        : this._dateNow.toISOString()
+    );
   }
 
   private _isDeletingPages(curPages: Page[], oldPages: Page[]) {
