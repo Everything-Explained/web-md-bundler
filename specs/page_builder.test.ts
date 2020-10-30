@@ -232,24 +232,23 @@ tape('PageBuilder{}', t => {
       resetFileChanges(filePath, oldPages);
     });
   });
-  t.test('updatePages() update pages if their content has changed.', t => {
+  t.test('updatePages() updates pages if their content has changed.', t => {
     t.plan(5); const pb = new PageBuilder([`${mockFolder}/test_change_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_change_page.json`;
       const oldPages = await getPages(filePath);
-      const oldPage  = oldPages.find(page => page.title == 'page that changes');
+      const oldPage  = oldPages.find(page => page.title == 'page that changes')!;
       await pb.updatePages(); // file is changed in directory
       const updPages     = await getPages(filePath);
-      const updPage      = updPages.find(page => page.title == 'page that changes');
+      const updPage      = updPages.find(page => page.title == 'page that changes')!;
       const pagesFromMap = pb.pagesMap.get(pb.dirs[0]);
       const changedStr   = 'This content has changed.';
-      const pageHasDate  = !!updPage?.date;
       const dateIsValid  = new Date(oldPage!.date) < new Date(updPage!.date)
       ;
       t.isNot(oldPage,          undefined,    'page exists to change');
-      t.is   (updPage?.content, changedStr,   'page content is changed after update');
+      t.is   (updPage.content, changedStr,    'page content is changed after update');
       t.same (updPages,         pagesFromMap, 'JSON file matches internal page map');
-      t.ok   (pageHasDate,                    'updated page has a date');
+      t.isNot(oldPage.date, updPage.date,     'updated page has a date');
       t.ok   (dateIsValid,                    'updated page has valid date')
       ;
       // Cleanup
@@ -281,6 +280,26 @@ tape('PageBuilder{}', t => {
         // Cleanup
         resetFileChanges(filePath, oldPages);
       }
+    });
+  });
+  t.test('updatePages() will preserve static dates set inside pages.', t => {
+    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_static_dates`], async (err) => {
+      if (err) throw err;
+      const filePath = `${pb.dirs[0]}${pathSep}test_static_dates.json`;
+      const oldPages = await getPages(filePath);
+      const oldPage  = oldPages.find(page => page.title == 'page will change')!;
+      await pb.updatePages(); // file is changed in directory
+      const updPages      = await getPages(filePath);
+      const updPage       = updPages.find(page => page.title == 'page will change')!;
+      const addedPage     = updPages.find(page => page.title == 'page to add')!;
+      const addedPageDate = new Date('2/22/2022').toISOString()
+      ;
+      t.isNot(oldPage.content, updPage.content, 'changed content updated');
+      t.is(oldPage.date,       updPage.date,    'changed pages retain static dates');
+      t.is(addedPage.date,     addedPageDate,   'added pages retain static dates')
+      ;
+      // Cleanup
+      resetFileChanges(filePath, oldPages);
     });
   });
 });
