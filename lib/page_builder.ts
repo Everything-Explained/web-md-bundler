@@ -182,35 +182,26 @@ export class PageBuilder {
     ;
     for (const curPage of curPages) {
       const oldPage = this._findPageInPages(curPage, oldPages);
-      if (this._updatePageDate(curPage, oldPage))
-        hasModifiedPages = true
-      ;
       if (!oldPage) {
+        this._normalizePageDate(curPage);
         this._log(`[added]: ${curPage.title}`);
-        continue;
+        hasModifiedPages = true; continue;
       }
-      if (oldPage.content != curPage.content) {
+      if (curPage.content != oldPage.content) {
+        curPage.date = this._dateNow.toISOString();
         this._log(`[modified]: ${curPage.title}`);
+        hasModifiedPages = true;
       }
     }
     return hasModifiedPages;
   }
 
-  private _updatePageDate(curPage: Page, oldPage: Page|undefined) {
-    const pageAddedOrChanged = !oldPage || oldPage.content != curPage.content;
-    if (pageAddedOrChanged) {
-      // Preserve dateCreated or dateEdited use-case
-      const updatedDate = curPage.date
-        ? new Date(curPage.date)
-        : this._dateNow
-      ;
-      if (updatedDate.toString() == 'Invalid Date')
-        throw Error(`Invalid Date for the page titled: "${curPage.title}"`)
-      ;
-      curPage.date = updatedDate.toISOString();
-      return true;
-    }
-    return false;
+  private _normalizePageDate(page: Page) {
+    const dateObj = page.date ? new Date(page.date) : this._dateNow;
+    if (dateObj.toString() == 'Invalid Date')
+      throw Error(`Invalid Date for the page titled: "${page.title}"`)
+    ;
+    page.date = dateObj.toISOString();
   }
 
   private _hasDeletedPages(curPages: Page[], oldPages: Page[]) {
