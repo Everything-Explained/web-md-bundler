@@ -66,8 +66,8 @@ export class PageBuilder {
       const oldPages = this._oldPageData.get(dir)!;
       const curPages = this._pageData.get(dir)!
       ;
-      const hasChanged = this._updChangedPages(curPages, oldPages);
-      const hasDeleted = this._hasDeletedPages(curPages, oldPages)
+      const hasChanged = this._isUpdatingPages(curPages, oldPages);
+      const hasDeleted = this._isDeletingPages(curPages, oldPages)
       ;
       if (hasChanged || hasDeleted) {
         await this._savePages(dir); continue;
@@ -177,7 +177,7 @@ export class PageBuilder {
     return { ...fileObj.attributes, content: fileObj.body} as Page;
   }
 
-  private _updChangedPages(curPages: Page[], oldPages: Page[]) {
+  private _isUpdatingPages(curPages: Page[], oldPages: Page[]) {
     let hasModifiedPages = false
     ;
     for (const curPage of curPages) {
@@ -204,7 +204,7 @@ export class PageBuilder {
     page.date = dateObj.toISOString();
   }
 
-  private _hasDeletedPages(curPages: Page[], oldPages: Page[]) {
+  private _isDeletingPages(curPages: Page[], oldPages: Page[]) {
     let hasDeleted = false
     ;
     for (const oldPage of oldPages) {
