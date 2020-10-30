@@ -34,6 +34,18 @@ const getLastStdout = () => {
   return lastStr;
 };
 
+const getOldPageStates = async (dirs: string[]) => {
+  const vars: [string, Page[], Page, Page][] = [];
+  for (const dir of dirs) {
+    const filePath    = `${dir}/${pathBasename(dir)}.json`;
+    const oldPages    = await getPages(filePath);
+    const oldPage     = oldPages.find(page => page.title == 'page to change')!;
+    const staticPage = oldPages.find(page => page.title == 'existing page')!;
+    vars.push([filePath, oldPages, oldPage, staticPage]);
+  }
+  return vars;
+};
+
 tape('PageBuilder{}', t => {
 
   t.test('constructor() logs to console when env variable is not set to "is-testing"', t => {
@@ -233,5 +245,31 @@ tape('PageBuilder{}', t => {
       catch (err) { t.throws(() => { throw err; }); }
     });
   });
-
+  t.test('updatePages() updates all pages in all specified directories.', t => {
+    const rootPath = `${mockFolder}/test_multi_dir_changes`;
+    const dirs = [
+      `${rootPath}${pathSep}one`,
+      `${rootPath}${pathSep}two`,
+      `${rootPath}${pathSep}three`,
+    ];
+    t.plan(12); const pb = new PageBuilder(dirs, async (err) => {
+      if (err) throw err;
+      const states = await getOldPageStates(pb.dirs);
+      await pb.updatePages();
+      for (const state of states) {
+        const [filePath, oldPages, oldPage, oldStaticPage] = state;
+        const updPages    = await getPages(filePath);
+        const addedPage   = updPages.find(page => page.title == 'page to add')!;
+        const chgPage     = updPages.find(page => page.title == 'page to change')!;
+        const staticPage2 = updPages.find(page => page.title == 'existing page')
+        ;
+        t.is(chgPage.content, 'is changed',                    'page was changed');
+        t.ok(new Date(oldPage.date!) < new Date(chgPage.date), 'date updated');
+        t.is(addedPage.content, 'page added',                  'page was added');
+        t.same(oldStaticPage, staticPage2,                     'existing page untouched');
+        // Cleanup
+        resetFileChanges(filePath, oldPages);
+      }
+    });
+  });
 });

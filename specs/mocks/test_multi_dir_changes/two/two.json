@@ -1,0 +1,14 @@
+[
+  {
+    "title": "existing page",
+    "author": "me",
+    "content": "This is some content for the file.",
+    "date": "2020-10-29T22:36:00.059Z"
+  },
+  {
+    "title": "page to change",
+    "author": "me",
+    "content": "The page contents will be changed.",
+    "date": "2020-10-29T22:36:00.059Z"
+  }
+]
