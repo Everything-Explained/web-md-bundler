@@ -165,9 +165,6 @@ export class PageBuilder {
     if (!title)
       throw Error(`File is missing a title: "${shortFilePath}"`)
     ;
-    if (title != pathBasename(filePath, '.md'))
-      throw Error(`Title does not match file name: "${shortFilePath}"`)
-    ;
     if (!author)
       throw Error(`Missing Author: "${shortFilePath}"`)
     ;

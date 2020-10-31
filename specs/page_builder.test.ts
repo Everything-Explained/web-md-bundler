@@ -87,12 +87,7 @@ tape('PageBuilder{}', t => {
       t.ok(err instanceof Error, 'empty directory');
     });
   });
-  t.test('constructor() throws an error when loaded file has invalid title.', t => {
-    const testFolder = `${mockFolder}/test_inconsistent_title`;
-    t.plan(1); new PageBuilder([testFolder], (err) => {
-      t.ok(err instanceof Error);
-    });
-  });
+
   t.test('constructor() throws an error when loaded file has missing title.', t => {
     const testFolder = `${mockFolder}/test_missing_title`;
     t.plan(1); new PageBuilder([testFolder], (err) => {
