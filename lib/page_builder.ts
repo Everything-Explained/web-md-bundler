@@ -171,7 +171,7 @@ export class PageBuilder {
     if (!author)
       throw Error(`Missing Author: "${shortFilePath}"`)
     ;
-    if (date) {
+    if (date) { // only capture static dates
       if (!Date.parse(date || ''))
         throw Error(`Invalid Date for page: "${shortFilePath}"`)
       ;
@@ -184,22 +184,16 @@ export class PageBuilder {
   }
 
   private _isUpdatingPages(curPages: Page[], oldPages: Page[]) {
-    let hasModifiedPages = false
-    ;
-    for (const curPage of curPages) {
-      const oldPage  = this._findPageInPages(curPage, oldPages);
-      if (!oldPage) {
+    let hasUpdatedPages = false;
+    curPages.forEach(curPage => {
+      const oldPage = this._findPageInPages(curPage, oldPages);
+      if (curPage.content != oldPage?.content) {
         curPage.date = this._normalizeDate(curPage.date);
-        this._log(`[ADD]: ${curPage.title}.md`);
-        hasModifiedPages = true; continue;
+        this._log(`[${!oldPage ? 'ADD' : 'CHG'}]: ${curPage.title}.md`);
+        hasUpdatedPages = true;
       }
-      if (curPage.content != oldPage.content) {
-        curPage.date = this._normalizeDate(curPage.date);
-        this._log(`[CHG]: ${curPage.title}.md`);
-        hasModifiedPages = true;
-      }
-    }
-    return hasModifiedPages;
+    });
+    return hasUpdatedPages;
   }
 
   private _normalizeDate(date: string|undefined) {
