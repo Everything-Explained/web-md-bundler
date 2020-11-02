@@ -1,4 +1,4 @@
-import { MDPageBundler } from "./lib/page_builder";
+import { MDPageBundler } from "./lib/md_page_bundler";
 import config from './config.json';
 import bunyan from 'bunyan';
 
