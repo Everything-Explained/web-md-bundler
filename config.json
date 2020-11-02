@@ -1,3 +1,7 @@
 {
-  "paths": []
+  "paths": [
+    "../web_client/src/views/home",
+    "../web_client/src/views/changelog",
+    "../web_client/src/views/faq"
+  ]
 }
