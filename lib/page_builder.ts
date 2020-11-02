@@ -5,7 +5,6 @@ import {
   basename as pathBasename,
   extname as pathExtname,
   resolve as pathResolve,
-  join    as pathJoin,
   sep as pathSep } from 'path';
 import bunyan from 'bunyan';
 import importFresh from 'import-fresh';
@@ -33,21 +32,20 @@ export interface Page extends MDFormat {
 
 
 
-export class PageBuilder {
+export class MDPageBundler {
 
   /** Promisified File System */
   private _pfs     = promises;
   private _dateNow = new Date();
 
   private _dirs        : string[] = [];
-  private _pageData    : Map<string, Page[]> = new Map();
+  private _newPageData : Map<string, Page[]> = new Map();
   private _oldPageData : Map<string, Page[]> = new Map();
 
-
-  get dirs()      { return this._dirs; }
-  get shortDirs() { return this._dirs.map(this._shortenPath); }
-  get pagesMap()  { return this._pageData; }
-  get isTesting() { return process.env.testState == 'is-testing'; }
+  get dirs()        { return this._dirs; }
+  get shortDirs()   { return this._dirs.map(this._shortenPath); }
+  get newPagesMap() { return this._newPageData; }
+  get isTesting()   { return process.env.testState == 'is-testing'; }
 
 
   constructor(dirs: string[], callback: (err: Error|null) => void) {
@@ -61,14 +59,14 @@ export class PageBuilder {
   }
 
 
-  public async updatePages() {
+  public async processPages() {
     for (const dir of this._dirs) {
       this._log(`[processing: ${this._shortenPath(dir)}]`);
       const oldPages = this._oldPageData.get(dir)!;
-      const curPages = this._pageData.get(dir)!
+      const newPages = this._newPageData.get(dir)!
       ;
-      const hasChanged = this._isUpdatingPages(curPages, oldPages);
-      const hasDeleted = this._isDeletingPages(curPages, oldPages)
+      const hasChanged = this._hasUpdatedPages(newPages, oldPages);
+      const hasDeleted = this._hasDeletedPages(newPages, oldPages)
       ;
       if (hasChanged || hasDeleted) {
         this._aggregatePageDates(dir);
@@ -98,12 +96,12 @@ export class PageBuilder {
 
   private async _loadOldPages() {
     for (const dir of this._dirs) {
-      const filePath = `${dir}${pathSep}${pathBasename(dir)}.json`;
-      if (!existsSync(filePath)) {
+      const bundleFilePath = `${dir}${pathSep}${pathBasename(dir)}.json`;
+      if (!existsSync(bundleFilePath)) {
         this._oldPageData.set(dir, []);
         continue;
       }
-      const pages = (await importFresh(filePath)) as Page[];
+      const pages = (await importFresh(bundleFilePath)) as Page[];
       this._oldPageData.set(dir, pages);
     }
   }
@@ -112,19 +110,20 @@ export class PageBuilder {
     for (const dir of this._dirs) {
       const fileNames   = await this._pfs.readdir(dir);
       const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
-      const pages       = await this._getPagesFromFiles(mdFilePaths);
-      this._pageData.set(dir, pages);
+      const newPages    = await this._getPagesFromFiles(mdFilePaths);
+      this._newPageData.set(dir, newPages);
     }
   }
 
   private _aggregatePageDates(dir: string) {
-    const curPages = this._pageData.get(dir)!;
+    const newPages = this._newPageData.get(dir)!;
     const oldPages = this._oldPageData.get(dir)!
     ;
-    curPages.forEach(curPage => {
-      if (curPage.date) return;
-      const oldPage = this._findPageInPages(curPage, oldPages);
-      curPage.date = oldPage ? oldPage.date : curPage.date;
+    newPages.forEach(newPage => {
+      // static and updated dates are maintained
+      if (newPage.date) return;
+      const oldPage = this._findPageInPages(newPage, oldPages);
+      newPage.date = oldPage ? oldPage.date : newPage.date;
     });
   }
 
@@ -142,7 +141,12 @@ export class PageBuilder {
   private async _getPagesFromFiles(filePaths: string[]) {
     const files = await this._readAllFiles(filePaths);
     return files.map((file, i) => {
-      return this._fileToPage(filePaths[i], file);
+      const shortFilePath = this._shortenPath(filePaths[i]);
+      try { return this._fileToPage(file); }
+      catch (err) {
+        // Easier to locate errors with a file name
+        throw Error(`${err.message} @ "${shortFilePath}"`);
+      }
     });
   }
 
@@ -155,45 +159,40 @@ export class PageBuilder {
     return fileData;
   }
 
-  private _fileToPage(filePath: string, file: string) {
-    const shortFilePath = this._shortenPath(filePath);
+  private _fileToPage(file: string) {
     if (!frontMatter.test(file))
-      throw Error(`Invalid or Missing front matter: "${shortFilePath}"`)
+      throw Error(`Invalid or Missing front matter`)
     ;
-    const fileObj = frontMatter<MDFormat>(file);
+    const fileObj               = frontMatter<MDFormat>(file);
     const {title, author, date} = fileObj.attributes;
-    if (!title)
-      throw Error(`File is missing a title: "${shortFilePath}"`)
+    const isInvalidDate         = !!(date && !Date.parse(date));
+    const isEmptyContent        = !fileObj.body.trim()
     ;
-    if (!author)
-      throw Error(`Missing Author: "${shortFilePath}"`)
+    if (!title)         throw Error(`File is missing a title`);
+    if (!author)        throw Error(`Missing Author`);
+    if (isInvalidDate)  throw Error(`Invalid Date for page`);
+    if (isEmptyContent) throw Error(`Empty file content`)
     ;
-    if (date) { // only capture static dates
-      if (!Date.parse(date || ''))
-        throw Error(`Invalid Date for page: "${shortFilePath}"`)
-      ;
+    if (date) { // capture static dates
       fileObj.attributes.date = new Date(date).toISOString();
     }
-    if (!fileObj.body.trim())
-      throw Error(`Missing file content: "${shortFilePath}"`)
-    ;
     return { ...fileObj.attributes, content: fileObj.body} as Page;
   }
 
-  private _isUpdatingPages(curPages: Page[], oldPages: Page[]) {
+  private _hasUpdatedPages(newPages: Page[], oldPages: Page[]) {
     let hasUpdatedPages = false;
-    curPages.forEach(curPage => {
-      const oldPage = this._findPageInPages(curPage, oldPages);
-      if (curPage.content != oldPage?.content) {
-        curPage.date = this._normalizeDate(curPage.date);
-        this._log(`[${!oldPage ? 'ADD' : 'CHG'}]: ${curPage.title}.md`);
+    newPages.forEach(newPage => {
+      const oldPage = this._findPageInPages(newPage, oldPages);
+      if (newPage.content != oldPage?.content) {
+        newPage.date = this._normalizeDate(newPage.date);
+        this._log(`[${!oldPage ? 'ADD' : 'CHG'}]: ${newPage.title}.md`);
         hasUpdatedPages = true;
       }
     });
     return hasUpdatedPages;
   }
 
-  private _normalizeDate(date: string|undefined) {
+  private _normalizeDate(date: string|undefined): ISODateString {
     return (
       date
         ? new Date(date).toISOString()
@@ -201,16 +200,12 @@ export class PageBuilder {
     );
   }
 
-  private _isDeletingPages(curPages: Page[], oldPages: Page[]) {
-    let hasDeleted = false
-    ;
-    for (const oldPage of oldPages) {
-      const curPage = this._findPageInPages(oldPage, curPages);
-      if (curPage) continue;
-      this._log(`[deleted]: ${oldPage.title}`);
-      hasDeleted = true;
-    }
-    return hasDeleted;
+  private _hasDeletedPages(newPages: Page[], oldPages: Page[]) {
+    return !oldPages.every(oldPage => {
+      const newPage = this._findPageInPages(oldPage, newPages);
+      if (!newPage) this._log(`[DEL]: ${oldPage.title}`);
+      return !!newPage;
+    });
   }
 
   private _findPageInPages(page: Page, pages: Page[]) {
@@ -218,8 +213,10 @@ export class PageBuilder {
   }
 
   private _savePages(dir: string) {
-    const pages = this._pageData.get(dir)!;
-    return this._pfs.writeFile(`${dir}/${pathBasename(dir)}.json`, JSON.stringify(pages, null, 2));
+    return this._pfs.writeFile(
+      `${dir}/${pathBasename(dir)}.json`,
+      JSON.stringify(this._newPageData.get(dir), null, 2)
+    );
   }
 
   private _shortenPath(dir: string) {
@@ -228,8 +225,6 @@ export class PageBuilder {
     return `${splitPath[splitPathLen - 2]}/${splitPath[splitPathLen - 1]}`;
   }
 
-  private _log(msg: string) {
-    if (!this.isTesting) log.info(msg);
-  }
+  private _log(msg: string) { if (!this.isTesting) log.info(msg); }
 
 }

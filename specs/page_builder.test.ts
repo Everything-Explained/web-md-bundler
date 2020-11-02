@@ -1,5 +1,5 @@
 import tape from 'tape';
-import { Page, PageBuilder } from '../lib/page_builder';
+import { Page, MDPageBundler } from '../lib/page_builder';
 import smap from 'source-map-support';
 import { writeFile } from 'fs';
 import importFresh from 'import-fresh';
@@ -50,7 +50,7 @@ tape('PageBuilder{}', t => {
 
   t.test('constructor() logs to console when env variable is not set to "is-testing"', t => {
     const stdoutStr = getLastStdout();
-    t.plan(3); new PageBuilder([`${mockFolder}/test_valid_directory`], (err) => {
+    t.plan(3); new MDPageBundler([`${mockFolder}/test_valid_directory`], (err) => {
       t.is(err, null, 'no errors occur');
       const initMsg = JSON.parse(stdoutStr[0]).msg;
       t.is(initMsg, 'Initializing', 'log matches expected value')
@@ -63,61 +63,61 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('constructor() throws an error with empty directory array.', t => {
-    t.plan(1); new PageBuilder([], (err) => {
+    t.plan(1); new MDPageBundler([], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('constructor() throws an error with invalid directories.', t => {
-    t.plan(1); new PageBuilder(['../invalid/path'], (err) => {
+    t.plan(1); new MDPageBundler(['../invalid/path'], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('constructor() throws an error with invalid front matter.', t => {
     const testFolder = `${mockFolder}/test_invalid_file`;
-    t.plan(1); new PageBuilder([testFolder], (err) => {
+    t.plan(1); new MDPageBundler([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('constructor() throws an error when directory missing .md files.', t => {
     const testFolder = `${mockFolder}/test_no_md_files`;
-    t.plan(2); new PageBuilder([testFolder], (err) => {
+    t.plan(2); new MDPageBundler([testFolder], (err) => {
       t.ok(err instanceof Error, 'no .md files present');
     });
-    new PageBuilder([`${mockFolder}/test_empty_dir`], (err) => {
+    new MDPageBundler([`${mockFolder}/test_empty_dir`], (err) => {
       t.ok(err instanceof Error, 'empty directory');
     });
   });
 
   t.test('constructor() throws an error when loaded file has missing title.', t => {
     const testFolder = `${mockFolder}/test_missing_title`;
-    t.plan(1); new PageBuilder([testFolder], (err) => {
+    t.plan(1); new MDPageBundler([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('constructor() throws an error when loaded file has missing author.', t => {
     const testFolder = `${mockFolder}/test_missing_author`;
-    t.plan(1); new PageBuilder([testFolder], (err) => {
+    t.plan(1); new MDPageBundler([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('constructor() throws an error when loaded file has missing content.', t => {
     const testFolder = `${mockFolder}/test_missing_content`;
-    t.plan(1); new PageBuilder([testFolder], (err) => {
+    t.plan(1); new MDPageBundler([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
   t.test('constructor() throws an error when loaded file has invalid static date.', t => {
     const testFolder = `${mockFolder}/test_invalid_date`;
-    t.plan(1); new PageBuilder([testFolder], (err) => {
+    t.plan(1); new MDPageBundler([testFolder], (err) => {
       t.ok(err instanceof Error);
     });
   });
 
   t.test('constructor() populates internal map with valid Pages.', t => {
     const testFolder = `${mockFolder}/test_valid_directory`;
-    t.plan(2); const pb = new PageBuilder([testFolder], (err) => {
+    t.plan(2); const pb = new MDPageBundler([testFolder], (err) => {
       t.is(err, null, 'error should be null');
-      const values = Array.from(pb.pagesMap.values())[0].map(val => val.title);
+      const values = Array.from(pb.newPagesMap.values())[0].map(val => val.title);
       t.same(values, ['page 1', 'page 2', 'page 3']);
     });
   });
@@ -129,7 +129,7 @@ tape('PageBuilder{}', t => {
       `${rootDir}/two`,
       `${rootDir}/three`
     ];
-    t.plan(1); const pb = new PageBuilder(testFolders, async (err) => {
+    t.plan(1); const pb = new MDPageBundler(testFolders, async (err) => {
       const isAbsPath = (dir: string) => (!!~dir.indexOf(`:${pathSep}`));
       t.ok(pb.dirs.every(isAbsPath), 'contains root file directory');
     });
@@ -142,7 +142,7 @@ tape('PageBuilder{}', t => {
       `${rootDir}/two`,
       `${rootDir}/three`
     ];
-    t.plan(1); const pb = new PageBuilder(testFolders, async (err) => {
+    t.plan(1); const pb = new MDPageBundler(testFolders, async (err) => {
       const isShortPath =
         (dir: string) => (dir == `test_multiple_directories/${pathBasename(dir)}`)
       ;
@@ -151,13 +151,13 @@ tape('PageBuilder{}', t => {
   });
 
   t.test('updatePages() does not overwrite existing JSON file if there are no changes.', t => {
-    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_valid_directory`], async (err) => {
+    t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_valid_directory`], async (err) => {
       t.is(err, null, 'error should be null')
       ;
       const filePath = `${pb.dirs[0]}${pathSep}test_valid_directory.json`;
       const oldPages = await getPages(filePath);
       const oldModTime = (await fs.promises.stat(filePath)).mtimeMs;
-      await pb.updatePages();
+      await pb.processPages();
       const updPages = await getPages(filePath);
       const updModTime = (await fs.promises.stat(filePath)).mtimeMs
       ;
@@ -166,13 +166,13 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('updatePages() aggregates page dates during save operation.', t => {
-    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_date_aggregation`], async (err) => {
+    t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_date_aggregation`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}${pathSep}test_date_aggregation.json`;
       const oldPages = await getPages(filePath);
       const oldPageWithDate = oldPages.find(page => page.title == 'static page with date')!;
       const oldPageNoDate   = oldPages.find(page => page.title == 'static page with no date')!;
-      await pb.updatePages(); // file is changed in directory
+      await pb.processPages(); // file is changed in directory
       const updPages = await getPages(filePath);
       const doPagesHaveDates = updPages.every(page => !!page.date);
       const updPageWithDate  = updPages.find(page => page.title == 'static page with date')!;
@@ -188,15 +188,15 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('updatePages() adds pages if they do not exist in JSON file.', t => {
-    t.plan(4); const pb = new PageBuilder([`${mockFolder}/test_add_page`], async (err) => {
+    t.plan(4); const pb = new MDPageBundler([`${mockFolder}/test_add_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_add_page.json`;
       const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'test adding this page');
-      await pb.updatePages();
+      await pb.processPages();
       const updPages     = await getPages(filePath);
       const addedPage    = updPages.find(page => page.title == 'test adding this page');
-      const pagesFromMap = pb.pagesMap.get(pb.dirs[0])!;
+      const pagesFromMap = pb.newPagesMap.get(pb.dirs[0])!;
       const pageHasDate  = !!addedPage?.date
       ;
       t.is   (oldPage,     undefined,    'page does not already exist');
@@ -209,15 +209,15 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('updatePages() deletes pages if they do not exist in JSON file.', t => {
-    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_delete_page`], async (err) => {
+    t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_delete_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_delete_page.json`;
       const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'page to delete');
-      await pb.updatePages(); // file does not exist in directory
+      await pb.processPages(); // file does not exist in directory
       const updPages     = await getPages(filePath);
       const deletedPage  = updPages.find(page => page.title == 'page to delete');
-      const pagesFromMap = pb.pagesMap.get(pb.dirs[0])
+      const pagesFromMap = pb.newPagesMap.get(pb.dirs[0])
       ;
       t.isNot( oldPage,    undefined, 'page exists to delete');
       t.is(deletedPage,    undefined, 'page is deleted after update');
@@ -228,15 +228,15 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('updatePages() updates pages if their content has changed.', t => {
-    t.plan(5); const pb = new PageBuilder([`${mockFolder}/test_change_page`], async (err) => {
+    t.plan(5); const pb = new MDPageBundler([`${mockFolder}/test_change_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_change_page.json`;
       const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'page that changes')!;
-      await pb.updatePages(); // file is changed in directory
+      await pb.processPages(); // file is changed in directory
       const updPages     = await getPages(filePath);
       const updPage      = updPages.find(page => page.title == 'page that changes')!;
-      const pagesFromMap = pb.pagesMap.get(pb.dirs[0]);
+      const pagesFromMap = pb.newPagesMap.get(pb.dirs[0]);
       const changedStr   = 'This content has changed.';
       const dateIsValid  = new Date(oldPage!.date) < new Date(updPage!.date)
       ;
@@ -257,10 +257,10 @@ tape('PageBuilder{}', t => {
       `${rootPath}${pathSep}two`,
       `${rootPath}${pathSep}three`,
     ];
-    t.plan(12); const pb = new PageBuilder(dirs, async (err) => {
+    t.plan(12); const pb = new MDPageBundler(dirs, async (err) => {
       if (err) throw err;
       const states = await getOldPageStates(pb.dirs);
-      await pb.updatePages();
+      await pb.processPages();
       for (const state of states) {
         const [filePath, oldPages, oldPage, oldStaticPage] = state;
         const updPages    = await getPages(filePath);
@@ -278,12 +278,12 @@ tape('PageBuilder{}', t => {
     });
   });
   t.test('updatePages() will preserve static dates set inside pages.', t => {
-    t.plan(3); const pb = new PageBuilder([`${mockFolder}/test_static_dates`], async (err) => {
+    t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_static_dates`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}${pathSep}test_static_dates.json`;
       const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'page will change')!;
-      await pb.updatePages(); // file is changed in directory
+      await pb.processPages(); // file is changed in directory
       const updPages      = await getPages(filePath);
       const updPage       = updPages.find(page => page.title == 'page will change')!;
       const addedPage     = updPages.find(page => page.title == 'page to add')!;
