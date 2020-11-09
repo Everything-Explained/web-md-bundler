@@ -66,14 +66,14 @@ export class MDPageBundler {
       const oldPages = this._oldPageData.get(dir)!;
       const newPages = this._newPageData.get(dir)!
       ;
+      if (renderType == 'html')
+        this._renderMarkdown(newPages)
+      ;
       const hasUpdated = this._updatePages(newPages, oldPages);
       const hasDeleted = this._deletePages(newPages, oldPages)
       ;
       if (hasUpdated || hasDeleted) {
         this._aggregatePageDates(dir);
-        if (renderType == 'html')
-          this._renderMarkdown(newPages)
-        ;
         await this._savePages(dir); continue;
       }
       this._log('Pages are up to date!');
