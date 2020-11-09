@@ -65,10 +65,10 @@ export class MDPageBundler {
       const oldPages = this._oldPageData.get(dir)!;
       const newPages = this._newPageData.get(dir)!
       ;
-      const hasChanged = this._hasUpdatedPages(newPages, oldPages);
-      const hasDeleted = this._hasDeletedPages(newPages, oldPages)
+      const hasUpdated = this._updatePages(newPages, oldPages);
+      const hasDeleted = this._deletePages(newPages, oldPages)
       ;
-      if (hasChanged || hasDeleted) {
+      if (hasUpdated || hasDeleted) {
         this._aggregatePageDates(dir);
         await this._savePages(dir); continue;
       }
@@ -179,7 +179,7 @@ export class MDPageBundler {
     return { ...fileObj.attributes, content: fileObj.body} as Page;
   }
 
-  private _hasUpdatedPages(newPages: Page[], oldPages: Page[]) {
+  private _updatePages(newPages: Page[], oldPages: Page[]) {
     let hasUpdatedPages = false;
     newPages.forEach(newPage => {
       const oldPage = this._findPageInPages(newPage, oldPages);
@@ -200,7 +200,7 @@ export class MDPageBundler {
     );
   }
 
-  private _hasDeletedPages(newPages: Page[], oldPages: Page[]) {
+  private _deletePages(newPages: Page[], oldPages: Page[]) {
     return !oldPages.every(oldPage => {
       const newPage = this._findPageInPages(oldPage, newPages);
       if (!newPage) this._log(`[DEL]: ${oldPage.title}`);
