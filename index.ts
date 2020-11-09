@@ -11,6 +11,6 @@ const pb = new MDPageBundler(config.paths, async (err) => {
     log.error(err);
     process.exit(); // All errors are fatal
   }
-  try         { await pb.processPages(); }
+  try         { await pb.processPages('plain'); }
   catch (err) { log.error(err);         }
 });
