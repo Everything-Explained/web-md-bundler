@@ -8,6 +8,7 @@ import {
   sep as pathSep } from 'path';
 import bunyan from 'bunyan';
 import importFresh from 'import-fresh';
+import markdown from './md_processor';
 
 smap.install();
 
@@ -59,7 +60,7 @@ export class MDPageBundler {
   }
 
 
-  public async processPages() {
+  public async processPages(renderType: 'plain'|'html') {
     for (const dir of this._dirs) {
       this._log(`[processing: ${this._shortenPath(dir)}]`);
       const oldPages = this._oldPageData.get(dir)!;
@@ -70,6 +71,9 @@ export class MDPageBundler {
       ;
       if (hasUpdated || hasDeleted) {
         this._aggregatePageDates(dir);
+        if (renderType == 'html')
+          this._renderMarkdown(newPages)
+        ;
         await this._savePages(dir); continue;
       }
       this._log('Pages are up to date!');
@@ -210,6 +214,12 @@ export class MDPageBundler {
 
   private _findPageInPages(page: Page, pages: Page[]) {
     return pages.find(p => p.title == page.title);
+  }
+
+  private _renderMarkdown(pages: Page[]) {
+    return pages.map(page => {
+      page.content = markdown.render(page.content);
+    });
   }
 
   private _savePages(dir: string) {

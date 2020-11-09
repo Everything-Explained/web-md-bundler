@@ -6,6 +6,7 @@ import importFresh from 'import-fresh';
 import testAddPages from './mocks/test_add_page/test_add_page.json';
 import { sep as pathSep, basename as pathBasename } from 'path';
 import fs from 'fs';
+import del from 'del';
 
 smap.install();
 
@@ -150,14 +151,14 @@ tape('PageBuilder{}', t => {
     });
   });
 
-  t.test('updatePages() does not overwrite existing JSON file if there are no changes.', t => {
+  t.test('processPages() does not overwrite existing JSON file if there are no changes.', t => {
     t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_valid_directory`], async (err) => {
       t.is(err, null, 'error should be null')
       ;
       const filePath = `${pb.dirs[0]}${pathSep}test_valid_directory.json`;
       const oldPages = await getPages(filePath);
       const oldModTime = (await fs.promises.stat(filePath)).mtimeMs;
-      await pb.processPages();
+      await pb.processPages('plain');
       const updPages = await getPages(filePath);
       const updModTime = (await fs.promises.stat(filePath)).mtimeMs
       ;
@@ -165,14 +166,14 @@ tape('PageBuilder{}', t => {
       t.same(updPages, oldPages, 'JSON file has not changed');
     });
   });
-  t.test('updatePages() aggregates page dates during save operation.', t => {
+  t.test('processPages() aggregates page dates during save operation.', t => {
     t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_date_aggregation`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}${pathSep}test_date_aggregation.json`;
       const oldPages = await getPages(filePath);
       const oldPageWithDate = oldPages.find(page => page.title == 'static page with date')!;
       const oldPageNoDate   = oldPages.find(page => page.title == 'static page with no date')!;
-      await pb.processPages(); // file is changed in directory
+      await pb.processPages('plain'); // file is changed in directory
       const updPages = await getPages(filePath);
       const doPagesHaveDates = updPages.every(page => !!page.date);
       const updPageWithDate  = updPages.find(page => page.title == 'static page with date')!;
@@ -187,13 +188,13 @@ tape('PageBuilder{}', t => {
       resetFileChanges(filePath, oldPages);
     });
   });
-  t.test('updatePages() adds pages if they do not exist in JSON file.', t => {
+  t.test('processPages() adds pages if they do not exist in JSON file.', t => {
     t.plan(4); const pb = new MDPageBundler([`${mockFolder}/test_add_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_add_page.json`;
       const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'test adding this page');
-      await pb.processPages();
+      await pb.processPages('plain');
       const updPages     = await getPages(filePath);
       const addedPage    = updPages.find(page => page.title == 'test adding this page');
       const pagesFromMap = pb.newPagesMap.get(pb.dirs[0])!;
@@ -208,13 +209,13 @@ tape('PageBuilder{}', t => {
       resetFileChanges(filePath, oldPages);
     });
   });
-  t.test('updatePages() deletes pages if they do not exist in JSON file.', t => {
+  t.test('processPages() deletes pages if they do not exist in JSON file.', t => {
     t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_delete_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_delete_page.json`;
       const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'page to delete');
-      await pb.processPages(); // file does not exist in directory
+      await pb.processPages('plain'); // file does not exist in directory
       const updPages     = await getPages(filePath);
       const deletedPage  = updPages.find(page => page.title == 'page to delete');
       const pagesFromMap = pb.newPagesMap.get(pb.dirs[0])
@@ -227,13 +228,13 @@ tape('PageBuilder{}', t => {
       resetFileChanges(filePath, oldPages);
     });
   });
-  t.test('updatePages() updates pages if their content has changed.', t => {
+  t.test('processPages() updates pages if their content has changed.', t => {
     t.plan(5); const pb = new MDPageBundler([`${mockFolder}/test_change_page`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}/test_change_page.json`;
       const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'page that changes')!;
-      await pb.processPages(); // file is changed in directory
+      await pb.processPages('plain'); // file is changed in directory
       const updPages     = await getPages(filePath);
       const updPage      = updPages.find(page => page.title == 'page that changes')!;
       const pagesFromMap = pb.newPagesMap.get(pb.dirs[0]);
@@ -250,7 +251,7 @@ tape('PageBuilder{}', t => {
       resetFileChanges(filePath, oldPages);
     });
   });
-  t.test('updatePages() updates all pages in all specified directories.', t => {
+  t.test('processPages() updates all pages in all specified directories.', t => {
     const rootPath = `${mockFolder}/test_multi_dir_changes`;
     const dirs = [
       `${rootPath}${pathSep}one`,
@@ -260,7 +261,7 @@ tape('PageBuilder{}', t => {
     t.plan(12); const pb = new MDPageBundler(dirs, async (err) => {
       if (err) throw err;
       const states = await getOldPageStates(pb.dirs);
-      await pb.processPages();
+      await pb.processPages('plain');
       for (const state of states) {
         const [filePath, oldPages, oldPage, oldStaticPage] = state;
         const updPages    = await getPages(filePath);
@@ -277,13 +278,13 @@ tape('PageBuilder{}', t => {
       }
     });
   });
-  t.test('updatePages() will preserve static dates set inside pages.', t => {
+  t.test('processPages() will preserve static dates set inside pages.', t => {
     t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_static_dates`], async (err) => {
       if (err) throw err;
       const filePath = `${pb.dirs[0]}${pathSep}test_static_dates.json`;
       const oldPages = await getPages(filePath);
       const oldPage  = oldPages.find(page => page.title == 'page will change')!;
-      await pb.processPages(); // file is changed in directory
+      await pb.processPages('plain'); // file is changed in directory
       const updPages      = await getPages(filePath);
       const updPage       = updPages.find(page => page.title == 'page will change')!;
       const addedPage     = updPages.find(page => page.title == 'page to add')!;
@@ -295,6 +296,20 @@ tape('PageBuilder{}', t => {
       ;
       // Cleanup
       resetFileChanges(filePath, oldPages);
+    });
+  });
+
+  t.test('processPages(html) returns all pages rendered as html', t => {
+    t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_markdown_render`], async (err) => {
+      if (err) throw err;
+      const filePath = `${pb.dirs[0]}${pathSep}test_markdown_render.json`;
+      const html = '<p>Some <strong>content</strong> with <em>markdown</em> in it</p>\n';
+      await pb.processPages('html');
+      const pages = await getPages(filePath);
+      t.is(pages[0].content, html);
+      t.is(pages[1].content, html);
+      t.is(pages[2].content, html);
+      del(filePath);
     });
   });
 });
