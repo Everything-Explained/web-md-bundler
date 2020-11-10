@@ -3,12 +3,14 @@
     "title": "existing page",
     "author": "me",
     "content": "This is some content for the file.",
-    "date": "2020-10-29T22:36:30.059Z"
+    "date": "2020-10-29T22:36:30.059Z",
+    "uri": "existing-page"
   },
   {
     "title": "page to change",
     "author": "me",
     "content": "The page contents will be changed.",
-    "date": "2020-10-29T22:36:30.059Z"
+    "date": "2020-10-29T22:36:30.059Z",
+    "uri": "page-to-change"
   }
 ]

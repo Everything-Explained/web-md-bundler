@@ -298,6 +298,19 @@ tape('PageBuilder{}', t => {
       resetFileChanges(filePath, oldPages);
     });
   });
+  t.test('processPages() sets URIs for all pages.', t => {
+    t.plan(2); const pb = new MDPageBundler([`${mockFolder}/test_uri`], async (err) => {
+      if (err) throw err;
+      const filePath = `${pb.dirs[0]}${pathSep}test_uri.json`;
+      await pb.processPages('plain');
+      const pages = await getPages(filePath);
+      t.is(pages[0].uri, 'page-with-spaced-title', 'uri is title with spaces converted to dashes');
+      t.is(pages[1].uri, 'pagewithnospacedtitle',  'uri is title as-is when no spaces');
+      // Cleanup
+      del(`${filePath}`);
+    });
+  });
+
 
   t.test('processPages(html) returns all pages rendered as html', t => {
     t.plan(3); const pb = new MDPageBundler([`${mockFolder}/test_markdown_render`], async (err) => {

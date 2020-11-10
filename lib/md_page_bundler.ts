@@ -28,6 +28,7 @@ interface MDFormat {
 
 export interface Page extends MDFormat {
   content: string;
+  uri: string;
 }
 
 
@@ -74,6 +75,7 @@ export class MDPageBundler {
       ;
       if (hasUpdated || hasDeleted) {
         this._aggregatePageDates(dir);
+        this._setPagesURI(newPages);
         await this._savePages(dir); continue;
       }
       this._log('Pages are up to date!');
@@ -220,6 +222,12 @@ export class MDPageBundler {
 
   private _findPageInPages(page: Page, pages: Page[]) {
     return pages.find(p => p.title == page.title);
+  }
+
+  private _setPagesURI(pages: Page[]) {
+    pages.map(page => {
+      page.uri = page.title.replace(/\s/g, '-');
+    });
   }
 
   private _savePages(dir: string) {
