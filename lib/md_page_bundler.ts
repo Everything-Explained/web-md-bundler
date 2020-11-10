@@ -119,18 +119,6 @@ export class MDPageBundler {
     }
   }
 
-  private _aggregatePageDates(dir: string) {
-    const newPages = this._newPageData.get(dir)!;
-    const oldPages = this._oldPageData.get(dir)!
-    ;
-    newPages.forEach(newPage => {
-      // static and updated dates are maintained
-      if (newPage.date) return;
-      const oldPage = this._findPageInPages(newPage, oldPages);
-      newPage.date = oldPage ? oldPage.date : newPage.date;
-    });
-  }
-
   private _filterMDFilePaths(dir: string, fileNames: string[]) {
     const mdFilePaths = fileNames
       .filter(name => pathExtname(name) == '.md')
@@ -183,6 +171,12 @@ export class MDPageBundler {
     return { ...fileObj.attributes, content: fileObj.body} as Page;
   }
 
+  private _renderMarkdown(pages: Page[]) {
+    return pages.map(page => {
+      page.content = markdown.render(page.content);
+    });
+  }
+
   private _updatePages(newPages: Page[], oldPages: Page[]) {
     let hasUpdatedPages = false;
     newPages.forEach(newPage => {
@@ -212,14 +206,20 @@ export class MDPageBundler {
     });
   }
 
-  private _findPageInPages(page: Page, pages: Page[]) {
-    return pages.find(p => p.title == page.title);
+  private _aggregatePageDates(dir: string) {
+    const newPages = this._newPageData.get(dir)!;
+    const oldPages = this._oldPageData.get(dir)!
+    ;
+    newPages.forEach(newPage => {
+      // static and updated dates are maintained
+      if (newPage.date) return;
+      const oldPage = this._findPageInPages(newPage, oldPages);
+      newPage.date = oldPage ? oldPage.date : newPage.date;
+    });
   }
 
-  private _renderMarkdown(pages: Page[]) {
-    return pages.map(page => {
-      page.content = markdown.render(page.content);
-    });
+  private _findPageInPages(page: Page, pages: Page[]) {
+    return pages.find(p => p.title == page.title);
   }
 
   private _savePages(dir: string) {
