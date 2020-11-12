@@ -185,7 +185,7 @@ export class MDPageBundler {
       const oldPage = this._findPageInPages(newPage, oldPages);
       if (newPage.content != oldPage?.content) {
         newPage.date = this._normalizeDate(newPage.date);
-        this._log(`[${!oldPage ? 'ADD' : 'CHG'}]: ${newPage.title}.md`);
+        this._log(`[${!oldPage ? 'ADD' : 'CHG'}]: ${newPage.title}`);
         hasUpdatedPages = true;
       }
     });
