@@ -49,7 +49,7 @@ const getOldPageStates = async (dirs: string[]) => {
 
 tape('PageBuilder{}', t => {
 
-  t.test('constructor() logs to console when env variable is not set to "is-testing"', t => {
+  t.test('constructor() logs to console when env variable is not set to "silent"', t => {
     const stdoutStr = getLastStdout();
     t.plan(3); new MDPageBundler([`${mockFolder}/test_valid_directory`], (err) => {
       t.is(err, null, 'no errors occur');

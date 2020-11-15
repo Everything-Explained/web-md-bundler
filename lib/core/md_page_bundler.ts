@@ -47,7 +47,7 @@ export class MDPageBundler {
   get dirs()        { return this._dirs; }
   get shortDirs()   { return this._dirs.map(this._shortenPath); }
   get newPagesMap() { return this._newPageData; }
-  get isLogging()   { return process.env.logState == 'silent'; }
+  get isLogging()   { return process.env.logState != 'silent'; }
 
 
   constructor(dirs: string[], callback: (err: Error|null) => void) {
@@ -243,6 +243,6 @@ export class MDPageBundler {
     return `${splitPath[splitPathLen - 2]}/${splitPath[splitPathLen - 1]}`;
   }
 
-  private _log(msg: string) { if (!this.isLogging) log.info(msg); }
+  private _log(msg: string) { if (this.isLogging) log.info(msg); }
 
 }
