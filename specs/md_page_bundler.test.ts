@@ -60,7 +60,7 @@ tape('PageBuilder{}', t => {
       t.is(stdoutStr.length, 1, 'write method reset')
       ;
       // Prevent logging for rest of tests
-      process.env.testState = 'is-testing';
+      process.env.logState = 'silent';
     });
   });
   t.test('constructor() throws an error with empty directory array.', t => {
