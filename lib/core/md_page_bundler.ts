@@ -28,7 +28,7 @@ interface MDFormat {
 
 export interface Page extends MDFormat {
   content: string;
-  uri: string;
+  uri?: string;
 }
 
 

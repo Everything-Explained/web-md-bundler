@@ -1,5 +1,5 @@
 import tape from 'tape';
-import { Page, MDPageBundler } from '../lib/md_page_bundler';
+import { Page, MDPageBundler } from '../lib/core/md_page_bundler';
 import smap from 'source-map-support';
 import { writeFile } from 'fs';
 import importFresh from 'import-fresh';

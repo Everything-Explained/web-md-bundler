@@ -1,8 +1,10 @@
 *.js
 node_modules
+dist
 test/
 test2/
 coverage/
 .nyc*/
 desktop.ini
 test.ts
+tsconfig.tsbuildinfo

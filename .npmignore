@@ -1,0 +1,19 @@
+# Extraneous directories
+.vscode/
+.nyc_output/
+specs/
+test/
+lib/
+coverage/
+
+# Testing Files
+test.ts
+test.js
+
+# Configuration Files
+.eslintrc.json
+.gitignore
+*.ini
+run.bat
+tsconfig.json
+tsconfig.buildinfo

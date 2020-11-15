@@ -1,6 +1,6 @@
 import tape from 'tape';
 import smap from 'source-map-support';
-import md from '../lib/md_processor';
+import md from '../lib/core/md_processor';
 
 smap.install();
 
