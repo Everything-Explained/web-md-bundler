@@ -16,4 +16,4 @@ test.js
 *.ini
 run.bat
 tsconfig.json
-tsconfig.buildinfo
+tsconfig.tsbuildinfo

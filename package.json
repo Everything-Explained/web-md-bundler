@@ -1,8 +1,9 @@
 {
   "name": "@everything_explained/web-md-bundler",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Bundles markdown files into a single JSON file, for web-client consumption.",
   "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "tape ./specs/*.js | tap-diff",
     "cov": "nyc --reporter=lcov tape ./specs/*.js | tap-diff"
