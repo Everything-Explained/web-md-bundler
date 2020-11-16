@@ -32,13 +32,11 @@ ${page.content}`]
     );
   }
 
-  private _savePages(pages: MDPage[]): void {
-    pages.forEach(page => {
-      fsPromises.writeFile(
-        `${this._dir}${pathSep}${page[0]}.md`,
-        page[1],
-        'utf8'
+  private async _savePages(pages: MDPage[]) {
+    for (const p of pages) {
+      await fsPromises.writeFile(
+        `${this._dir}${pathSep}${p[0]}.md`, p[1], 'utf8'
       );
-    });
+    }
   }
 }
