@@ -34,7 +34,7 @@ export interface Page extends MDFormat {
 
 
 
-export class MDPageBundler {
+export default class MDPageBundler {
 
   /** Promisified File System */
   private _pfs     = promises;
