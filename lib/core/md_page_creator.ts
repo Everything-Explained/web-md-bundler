@@ -14,9 +14,9 @@ export default class MDPageCreator {
   constructor(private _dir: string) {/***/}
 
 
-  public createPages(pages: Page[]): void {
+  public createPages(pages: Page[]) {
     const mdPages = pages.map(this.createMDPage);
-    this._savePages(mdPages);
+    return this._savePages(mdPages);
   }
 
 
