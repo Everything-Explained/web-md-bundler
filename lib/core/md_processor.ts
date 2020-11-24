@@ -11,7 +11,7 @@ const md = new Markdown({
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 md.use(require('markdown-it-deflist'));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-md.use(require('markdown-it-video'), { youtube: { width: 640, height: 480 }});
+md.use(require('markdown-it-video'), { youtube: { width: 'auto', height: 'auto' }});
 
 
 /** Set all external links to `target="_blank"` */
