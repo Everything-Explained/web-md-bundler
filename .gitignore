@@ -1,4 +1,6 @@
-*.js
+lib/core/*.js
+lib/index.js
+specs/*.js
 node_modules
 dist
 test/
