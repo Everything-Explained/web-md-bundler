@@ -50,14 +50,15 @@ export default class MDPageBundler {
   get isLogging()   { return process.env.logState != 'silent'; }
 
 
-  constructor(dirs: string[], callback: (err: Error|null) => void) {
+  constructor() {
     this._log('Initializing');
-    try {
-      this._dirs = dirs.map(dir => pathResolve(dir));
-      this._validateDirs();
-      this._loadAllPages(callback);
-    }
-    catch (err) { callback(err); }
+  }
+
+  public async initPagesFromFiles(dirs: string[]) {
+    this._log('Initializing');
+    this._dirs = dirs.map(dir => pathResolve(dir));
+    this._validateDirs();
+    await this._loadAllPages();
   }
 
 
@@ -82,22 +83,22 @@ export default class MDPageBundler {
     }
   }
 
+  public static renderMDStr(md: string) {
+    return markdown.render(md);
+  }
+
   private _validateDirs() {
     if (!this._dirs.length)
-      throw Error('Path configuration is EMPTY.')
+      throw Error('Path configuration is empty.')
     ;
     if (!this._dirs.every(dir => existsSync(dir)))
-      throw Error('One or more paths do NOT exist.')
+      throw Error('One or more paths do not exist.')
     ;
   }
 
-  private async _loadAllPages(callback: (err: Error|null) => void) {
-    try {
-      await this._loadOldPages();
-      await this._loadLatestPages();
-      callback(null);
-    }
-    catch (err) { callback(err); }
+  private async _loadAllPages() {
+    await this._loadOldPages();
+    await this._loadLatestPages();
   }
 
   private async _loadOldPages() {
