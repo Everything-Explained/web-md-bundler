@@ -7,19 +7,17 @@ const log = bunyan.createLogger({
 });
 
 
-const bundleMDPages = (function(dirs: string[], outType: 'plain'|'html') {
-  const pb = new MDPageBundler(dirs, async (err) => {
-    if (err) {
-      log.error(err);
-      process.exit(); // All errors are fatal
-    }
-    try         { await pb.processPages(outType); }
-    catch (err) { log.error(err); }
-  });
+const bundleMDFiles = (async function(dirs: string[], outType: 'plain'|'html') {
+  try {
+    const pb = new MDPageBundler();
+    await pb.initPagesFromFiles(dirs);
+    await pb.processPages(outType);
+  }
+  catch (err) { log.error(err); }
 });
 
 export default {
-  bundleMDPages,
+  bundleMDFiles,
   MDPageBundler,
   MDPageCreator
 };
