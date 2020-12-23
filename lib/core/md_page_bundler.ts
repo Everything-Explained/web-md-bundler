@@ -9,6 +9,7 @@ import {
 import bunyan from 'bunyan';
 import importFresh from 'import-fresh';
 import markdown from './md_processor';
+import slugify from 'slugify';
 
 smap.install();
 
@@ -19,17 +20,22 @@ const log = bunyan.createLogger({
 
 type ISODateString = string;
 
-interface MDFormat {
+export interface FrontMatter {
   title: string;
   author: string;
   id?: number|string;
   /** Can be either a `dateCreated` or `dateEdited` property */
   date?: ISODateString;
+  [key: string]: string|number|undefined;
 }
 
-export interface Page extends MDFormat {
+export interface Page extends FrontMatter {
   content: string;
-  [key: string]: string|undefined;
+}
+
+export interface PageMap {
+  dir: string;
+  pages: Page[]
 }
 
 
@@ -41,33 +47,39 @@ export default class MDPageBundler {
   private _pfs     = promises;
   private _dateNow = new Date();
 
-  private _dirs        : string[] = [];
-  private _newPageData : Map<string, Page[]> = new Map();
-  private _oldPageData : Map<string, Page[]> = new Map();
+  private _dirs         : string[] = [];
+  private _newPages     : Map<string, Page[]> = new Map();
+  private _bundledPages : Map<string, Page[]> = new Map();
 
   get dirs()        { return this._dirs; }
   get shortDirs()   { return this._dirs.map(this._shortenPath); }
-  get newPagesMap() { return this._newPageData; }
+  get newPagesMap() { return this._newPages; }
   get isLogging()   { return process.env.logState != 'silent'; }
 
 
-  constructor() {
-    this._log('Initializing');
-  }
+  constructor() { /* Initialize */ }
 
   public async initPagesFromFiles(dirs: string[]) {
     this._log('Initializing');
     this._dirs = dirs.map(dir => pathResolve(dir));
     this._validateDirs();
-    await this._loadAllPages();
+    await this._loadExistingBundle();
+    await this._loadLatestFiles();
   }
 
+  public async initPagesFromMaps(pageMaps: PageMap[]) {
+    this._log('Initializing');
+    this._dirs = pageMaps.map(map => pathResolve(map.dir));
+    this._validateDirs();
+    await this._loadExistingBundle();
+    this._dirs.forEach((dir, i) => this._newPages.set(dir, pageMaps[i].pages));
+  }
 
   public async processPages(renderType: 'plain'|'html') {
     for (const dir of this._dirs) {
       this._log(`[processing: ${this._shortenPath(dir)}]`);
-      const oldPages = this._oldPageData.get(dir)!;
-      const newPages = this._newPageData.get(dir)!
+      const oldPages = this._bundledPages.get(dir)!;
+      const newPages = this._newPages.get(dir)!
       ;
       if (renderType == 'html')
         this._renderMarkdown(newPages)
@@ -88,6 +100,7 @@ export default class MDPageBundler {
     return markdown.render(md);
   }
 
+
   private _validateDirs() {
     if (!this._dirs.length)
       throw Error('Path configuration is empty.')
@@ -97,29 +110,24 @@ export default class MDPageBundler {
     ;
   }
 
-  private async _loadAllPages() {
-    await this._loadOldPages();
-    await this._loadLatestPages();
-  }
-
-  private async _loadOldPages() {
+  private async _loadExistingBundle() {
     for (const dir of this._dirs) {
       const bundleFilePath = `${dir}${pathSep}${pathBasename(dir)}.json`;
       if (!existsSync(bundleFilePath)) {
-        this._oldPageData.set(dir, []);
+        this._bundledPages.set(dir, []);
         continue;
       }
       const pages = (await importFresh(bundleFilePath)) as Page[];
-      this._oldPageData.set(dir, pages);
+      this._bundledPages.set(dir, pages);
     }
   }
 
-  private async _loadLatestPages() {
+  private async _loadLatestFiles() {
     for (const dir of this._dirs) {
       const fileNames   = await this._pfs.readdir(dir);
       const mdFilePaths = this._filterMDFilePaths(dir, fileNames);
       const newPages    = await this._getPagesFromFiles(mdFilePaths);
-      this._newPageData.set(dir, newPages);
+      this._newPages.set(dir, newPages);
     }
   }
 
@@ -159,7 +167,7 @@ export default class MDPageBundler {
     if (!frontMatter.test(file))
       throw Error(`Invalid or Missing front matter`)
     ;
-    const fileObj               = frontMatter<MDFormat>(file);
+    const fileObj               = frontMatter<FrontMatter>(file);
     const {title, author, date} = fileObj.attributes;
     const isInvalidDate         = !!(date && !Date.parse(date));
     const isEmptyContent        = !fileObj.body.trim()
@@ -185,13 +193,23 @@ export default class MDPageBundler {
     let hasUpdatedPages = false;
     newPages.forEach(newPage => {
       const oldPage = this._findPageInPages(newPage, oldPages);
-      if (newPage.content != oldPage?.content) {
+      const isChanged = oldPage ? this.isPageChanged(newPage, oldPage) : false;
+      if (!oldPage || isChanged) {
         newPage.date = this._normalizeDate(newPage.date);
         this._log(`[${!oldPage ? 'ADD' : 'CHG'}]: ${newPage.title}`);
         hasUpdatedPages = true;
       }
     });
     return hasUpdatedPages;
+  }
+
+  private isPageChanged(newPage: Page, oldPage: Page) {
+    for (const key in newPage) {
+      if (newPage[key] != oldPage[key]) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private _normalizeDate(date: string|undefined): ISODateString {
@@ -215,8 +233,8 @@ export default class MDPageBundler {
   }
 
   private _aggregatePageDates(dir: string) {
-    const newPages = this._newPageData.get(dir)!;
-    const oldPages = this._oldPageData.get(dir)!
+    const newPages = this._newPages.get(dir)!;
+    const oldPages = this._bundledPages.get(dir)!
     ;
     newPages.forEach(newPage => {
       // static and updated dates are maintained
@@ -240,7 +258,7 @@ export default class MDPageBundler {
   private _savePages(dir: string) {
     return this._pfs.writeFile(
       `${dir}/${pathBasename(dir)}.json`,
-      JSON.stringify(this._newPageData.get(dir), null, 2)
+      JSON.stringify(this._newPages.get(dir), null, 2)
     );
   }
 

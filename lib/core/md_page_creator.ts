@@ -1,11 +1,10 @@
-import { Page } from "./md_page_bundler";
+import { FrontMatter, Page } from "./md_page_bundler";
 import { promises as fsPromises } from 'fs';
 import { sep as pathSep} from 'path';
 
 
 
 type MDPage = [title: string, content: string];
-type FrontMatterObj = { [key: string]: string|undefined };
 
 
 
@@ -28,7 +27,7 @@ export default class MDPageCreator {
   }
 
 
-  private createFrontMatter(fm: FrontMatterObj) {
+  private createFrontMatter(fm: FrontMatter) {
     const fence = '---';
     let fmStr = fence
     ;
