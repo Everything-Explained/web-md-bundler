@@ -202,11 +202,15 @@ export default class MDPageBundler {
   }
 
   private _deletePages(newPages: Page[], oldPages: Page[]) {
-    return !oldPages.every(oldPage => {
+    let hasDeleted = false;
+    oldPages.forEach(oldPage => {
       const newPage = this._findPageInPages(oldPage, newPages);
-      if (!newPage) this._log(`[DEL]: ${oldPage.title}`);
-      return !!newPage;
+      if (!newPage) {
+        this._log(`[DEL]: ${oldPage.title}`);
+        hasDeleted = true;
+      }
     });
+    return hasDeleted;
   }
 
   private _aggregatePageDates(dir: string) {
