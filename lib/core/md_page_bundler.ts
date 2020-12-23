@@ -227,7 +227,7 @@ export default class MDPageBundler {
 
   private _setPagesURI(pages: Page[]) {
     pages.map(page => {
-      page.uri = page.title.replace(/\s/g, '-');
+      page.uri = slugify(page.title, { lower: true, strict: true });
     });
   }
 
