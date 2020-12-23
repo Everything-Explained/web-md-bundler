@@ -22,6 +22,7 @@ type ISODateString = string;
 interface MDFormat {
   title: string;
   author: string;
+  id?: number|string;
   /** Can be either a `dateCreated` or `dateEdited` property */
   date?: ISODateString;
 }
@@ -226,6 +227,7 @@ export default class MDPageBundler {
   }
 
   private _findPageInPages(page: Page, pages: Page[]) {
+    if (page.id) return pages.find(p => p.id == page.id);
     return pages.find(p => p.title == page.title);
   }
 
