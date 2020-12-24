@@ -23,7 +23,7 @@ export interface FrontMatter {
   id?: number|string;
   /** Can be either a `dateCreated` or `dateEdited` property */
   date?: ISODateString;
-  [key: string]: string|number|undefined;
+  [key: string]: string|number|undefined|null;
 }
 
 export interface Page extends FrontMatter {
