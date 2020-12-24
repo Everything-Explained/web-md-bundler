@@ -6,16 +6,13 @@ import {
   extname as pathExtname,
   resolve as pathResolve,
   sep as pathSep } from 'path';
-import bunyan from 'bunyan';
 import importFresh from 'import-fresh';
 import markdown from './md_processor';
 import slugify from 'slugify';
 
 smap.install();
 
-const log = bunyan.createLogger({
-  name: 'builder'
-});
+const log = console;
 
 
 type ISODateString = string;

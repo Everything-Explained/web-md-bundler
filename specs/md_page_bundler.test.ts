@@ -52,7 +52,7 @@ tape('PageBuilder{}', t => {
     t.plan(3);
     const pb = new MDPageBundler();
     t.doesNotThrow(() => pb.initPagesFromFiles([`${mdMockFolder}/test_valid_directory`]), 'no errors occur');
-    const initMsg = JSON.parse(stdoutStr[0]).msg;
+    const initMsg = stdoutStr[0].trim();
     t.is(initMsg, 'Initializing', 'log matches expected value')
     ;
     console.log('custom stdout function should not execute this');
