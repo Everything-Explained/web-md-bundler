@@ -51,10 +51,10 @@ export default class MDPageBundler {
   private _newPages     : Map<string, Page[]> = new Map();
   private _bundledPages : Map<string, Page[]> = new Map();
 
-  get dirs()        { return this._dirs; }
-  get shortDirs()   { return this._dirs.map(this._shortenPath); }
-  get newPagesMap() { return this._newPages; }
-  get isLogging()   { return process.env.logState != 'silent'; }
+  get dirs()      { return this._dirs; }
+  get shortDirs() { return this._dirs.map(this._shortenPath); }
+  get pages()     { return this._newPages; }
+  get isLogging() { return process.env.logState != 'silent'; }
 
 
   constructor() { /* Initialize */ }
