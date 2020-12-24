@@ -202,6 +202,7 @@ export default class MDPageBundler {
 
   private isPageChanged(newPage: Page, oldPage: Page) {
     for (const key in newPage) {
+      if (key == 'uri') continue; // internally set
       if (newPage[key] != oldPage[key]) {
         return true;
       }
