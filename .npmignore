@@ -2,7 +2,7 @@
 .vscode/
 .nyc_output/
 specs/
-test/
+atest/
 lib/
 coverage/
 
