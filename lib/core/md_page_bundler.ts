@@ -56,7 +56,7 @@ export default class MDPageBundler {
 
   constructor() { /* Initialize */ }
 
-  public async initPagesFromFiles(dirs: string[]) {
+  public async initPagesFromDirs(dirs: string[]) {
     this._log('Initializing');
     this._dirs = dirs.map(dir => pathResolve(dir));
     this._validateDirs();
