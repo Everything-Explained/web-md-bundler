@@ -41,8 +41,9 @@ export interface PageMap {
 export default class MDPageBundler {
 
   /** Promisified File System */
-  private _pfs     = promises;
-  private _dateNow = new Date();
+  private _pfs      = promises;
+  private _dateNow  = new Date();
+  private _fileName = '';
 
   private _dirs         : string[] = [];
   private _newPages     : Map<string, Page[]> = new Map();
@@ -64,10 +65,11 @@ export default class MDPageBundler {
     await this._loadLatestFiles();
   }
 
-  public async initPagesFromMaps(pageMaps: PageMap[]) {
+  public async initPagesFromMaps(pageMaps: PageMap[], fileName = '') {
     this._log('Initializing');
     this._dirs = pageMaps.map(map => pathResolve(map.dir));
     this._validateDirs();
+    this._fileName = fileName;
     await this._loadExistingBundle();
     this._dirs.forEach((dir, i) => this._newPages.set(dir, pageMaps[i].pages));
   }
@@ -254,8 +256,9 @@ export default class MDPageBundler {
   }
 
   private _savePages(dir: string) {
+    const fileName = this._fileName || pathBasename(dir);
     return this._pfs.writeFile(
-      `${dir}/${pathBasename(dir)}.json`,
+      `${dir}/${fileName}.json`,
       JSON.stringify(this._newPages.get(dir), null, 2)
     );
   }
