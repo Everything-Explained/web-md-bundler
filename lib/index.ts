@@ -3,27 +3,23 @@ import MDPageCreator from "./core/md_page_creator";
 
 const log = console;
 
-const bundleMDFiles = (async function(dirs: string[], outType: 'plain'|'html') {
-  try {
-    const pb = new MDPageBundler();
-    await pb.initPagesFromFiles(dirs);
-    await pb.processPages(outType);
-  }
-  catch (err) { log.error(err); }
-});
+type Directory = string;
 
-const bundlePageMaps = (async function(pageMaps: PageMap[], outType: 'plain'|'html') {
-  try {
-    const pb = new MDPageBundler();
-    await pb.initPagesFromMaps(pageMaps);
-    await pb.processPages(outType);
-  }
-  catch(err) { log.error(err); }
+const bundleIt = (function<T>(inType: 'file'|'maps') {
+  return async function bundle(pages: T[], outType: 'plain'|'html') {
+    try {
+      const pb = new MDPageBundler();
+      if (inType == 'file') await pb.initPagesFromDirs(pages as []);
+      if (inType == 'maps') await pb.initPagesFromMaps(pages as []);
+      await pb.processPages(outType);
+    }
+    catch (err) { log.error(err); }
+  };
 });
 
 export default {
-  bundleMDFiles,
-  bundlePageMaps,
+  bundleMDFiles: bundleIt<Directory>('file'),
+  bundlePageMaps: bundleIt<PageMap>('maps'),
   MDPageBundler,
   MDPageCreator
 };
