@@ -1,6 +1,6 @@
 {
   "name": "@everything_explained/web-md-bundler",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Bundles markdown files into a single JSON file, for web-client consumption.",
   "main": "./dist/index.js",
   "types": "dist/index.d.ts",
