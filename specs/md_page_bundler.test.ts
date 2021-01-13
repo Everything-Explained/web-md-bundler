@@ -488,26 +488,26 @@ tape('PageBuilder{}', t => {
     const dirs = pb.dirs.map(dir => `${dir}${pathSep}${pathBasename(dir)}.json`);
     del(dirs);
   });
-  // t.test('initPagesFromMaps() can set a filename that is not associated with the dir', async t => {
-  //   t.plan(1);
-  //   const pb = new MDPageBundler();
-  //   const map = [
-  //     {
-  //       dir: `${mapMockFolder}/test_filename`,
-  //       pages: [
-  //         { title: 'A page', id: 1, content: 'some content', author: 'test' }
-  //       ]
-  //     },
-  //   ] as PageMap[];
-  //   await pb.initPagesFromMaps(map, 'customname');
-  //   await pb.processPages('plain');
-  //   const dir = `${pb.dirs[0]}${pathSep}customname.json`;
-  //   const pages = await getPages(dir);
-  //   t.deepEquals(pages[0], map[0].pages[0]);
+  t.test('initPagesFromMaps() can set a filename that is not associated with the dir', async t => {
+    t.plan(1);
+    const pb = new MDPageBundler();
+    const map = [
+      {
+        dir: `${mapMockFolder}/test_filename/customname.json`,
+        pages: [
+          { title: 'A page', id: 1, content: 'some content', author: 'test' }
+        ]
+      },
+    ] as PageMap[];
+    await pb.initPagesFromMaps(map);
+    await pb.processPages('plain');
+    const dir = pb.dirs[0];
+    const pages = await getPages(dir);
+    t.deepEquals(pages[0], map[0].pages[0]);
 
-  //   // Cleanup
-  //   del(dir);
-  // });
+    // Cleanup
+    del(dir);
+  });
 
 
 
