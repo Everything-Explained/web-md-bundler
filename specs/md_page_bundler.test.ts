@@ -66,15 +66,30 @@ tape('PageBuilder{}', t => {
     try { await pb.initPagesFromDirs([]); }
     catch (err) {
       t.pass('throws an error');
-      t.ok(err.message.includes('empty'), 'includes "empty" in error message.');
+      t.ok(err.message.includes('Path configuration is empty.'), 'shows custom error message');
     }
   });
   t.test('initPagesFromDirs() throws an error when a directory is not found.', async t => {
+    t.plan(4); const pb = new MDPageBundler();
+    let invalidPath = `${mdMockFolder}/dir_not_exist/ignores_file.json`;
+    try { await pb.initPagesFromDirs([invalidPath]); }
+    catch (err) {
+      t.pass('throws error');
+      t.ok(err.message.includes('Directory does NOT exist:'), 'directory not found with specified file');
+    }
+    invalidPath = `${mdMockFolder}/dir_not_exist`;
+    try { await pb.initPagesFromDirs([invalidPath]); }
+    catch (err) {
+      t.pass('throws error');
+      t.ok(err.message.includes('Directory does NOT exist:'), 'directory not found without specified file');
+    }
+  });
+  t.test('initPagesFromDirs() throws an error when an invalid file or path is used', async t => {
     t.plan(2); const pb = new MDPageBundler();
-    try { await pb.initPagesFromDirs(['../invalid/path']); }
+    try { await pb.initPagesFromDirs(['./an/invalid/file.js']); }
     catch (err) {
       t.pass('throws an error');
-      t.ok(err.message.includes('not exist'), 'includes "not exist" in error message.');
+      t.ok(err.message.includes('Invalid file name or directory'), 'shows custom error message');
     }
   });
   t.test('initPagesFromDirs() throws an error with invalid front matter.', async t => {
@@ -87,18 +102,12 @@ tape('PageBuilder{}', t => {
     }
   });
   t.test('initPagesFromDirs() throws an error when directory missing .md files.', async t => {
-    let testFolder = `${mdMockFolder}/test_no_md_files`;
-    t.plan(4); const pb = new MDPageBundler();
+    const testFolder = `${mdMockFolder}/test_no_md_files`;
+    t.plan(2); const pb = new MDPageBundler();
     try { await pb.initPagesFromDirs([testFolder]); }
     catch (err) {
       t.pass('throws an error');
       t.ok(err.message.includes('No .md files'), 'includes "no .md files" in error message');
-    }
-    testFolder = `${mdMockFolder}/test_empty_dir`;
-    try { await pb.initPagesFromDirs([testFolder]); }
-    catch (err) {
-      t.pass('throws an error');
-      t.ok(err.message.includes('do not exist'), 'includes "do not exist" in error message');
     }
   });
   t.test('initPagesFromDirs() throws an error when loaded file has missing title.', async t => {
@@ -479,26 +488,26 @@ tape('PageBuilder{}', t => {
     const dirs = pb.dirs.map(dir => `${dir}${pathSep}${pathBasename(dir)}.json`);
     del(dirs);
   });
-  t.test('initPagesFromMaps() can set a filename that is not associated with the dir', async t => {
-    t.plan(1);
-    const pb = new MDPageBundler();
-    const map = [
-      {
-        dir: `${mapMockFolder}/test_filename`,
-        pages: [
-          { title: 'A page', id: 1, content: 'some content', author: 'test' }
-        ]
-      },
-    ] as PageMap[];
-    await pb.initPagesFromMaps(map, 'customname');
-    await pb.processPages('plain');
-    const dir = `${pb.dirs[0]}${pathSep}customname.json`;
-    const pages = await getPages(dir);
-    t.deepEquals(pages[0], map[0].pages[0]);
+  // t.test('initPagesFromMaps() can set a filename that is not associated with the dir', async t => {
+  //   t.plan(1);
+  //   const pb = new MDPageBundler();
+  //   const map = [
+  //     {
+  //       dir: `${mapMockFolder}/test_filename`,
+  //       pages: [
+  //         { title: 'A page', id: 1, content: 'some content', author: 'test' }
+  //       ]
+  //     },
+  //   ] as PageMap[];
+  //   await pb.initPagesFromMaps(map, 'customname');
+  //   await pb.processPages('plain');
+  //   const dir = `${pb.dirs[0]}${pathSep}customname.json`;
+  //   const pages = await getPages(dir);
+  //   t.deepEquals(pages[0], map[0].pages[0]);
 
-    // Cleanup
-    del(dir);
-  });
+  //   // Cleanup
+  //   del(dir);
+  // });
 
 
 

@@ -5,6 +5,7 @@ import {
   basename as pathBasename,
   extname as pathExtname,
   resolve as pathResolve,
+  dirname as pathDirname,
   sep as pathSep } from 'path';
 import importFresh from 'import-fresh';
 import markdown from './md_processor';
@@ -104,9 +105,15 @@ export default class MDPageBundler {
     if (!this._dirs.length)
       throw Error('Path configuration is empty.')
     ;
-    if (!this._dirs.every(dir => existsSync(dir)))
-      throw Error('One or more paths do not exist.')
-    ;
+    this._dirs.forEach(dir => {
+      if (dir.includes('.') && !dir.includes('.json')) {
+        throw Error(`Invalid file name or directory: ${dir}`);
+      }
+      const realDir = dir.includes('.json') ? pathDirname(dir) : dir;
+      if (!existsSync(realDir)) {
+        throw Error(`Directory does NOT exist: (${realDir})`);
+      }
+    });
   }
 
   private async _loadExistingBundle() {
