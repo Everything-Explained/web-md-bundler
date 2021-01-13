@@ -116,7 +116,9 @@ export default class MDPageBundler {
 
   private async _loadExistingBundle() {
     for (const dir of this._dirs) {
-      const bundleFilePath = `${dir}${pathSep}${pathBasename(dir)}.json`;
+      const bundleFilePath =
+        dir.includes('.json') ? dir :`${dir}${pathSep}${pathBasename(dir)}.json`
+      ;
       if (!existsSync(bundleFilePath)) {
         this._bundledPages.set(dir, []);
         continue;
