@@ -32,14 +32,11 @@ function applyLinkTargetBlank(tokens: Token[], idx: number, link: string) {
   return false;
 }
 
-/** Convert all internal links to `<router-link to="/link">` */
+/** Convert all internal links to link with custom onclick handler */
 function applyVueRouterLinks(tokens: Token[], idx: number, link: string) {
   const linkOpen = tokens[idx];
   linkOpen.attrs = null;
-  linkOpen.attrSet('to', link);
-  tokens[idx].tag = 'router-link';
-  const linkClose = tokens.find(t => t.type == 'link_close')!;
-  linkClose.tag = 'router-link';
+  linkOpen.attrSet('onclick', `event.preventDefault(); window.app.$router.push('${link}')`);
 }
 
 
