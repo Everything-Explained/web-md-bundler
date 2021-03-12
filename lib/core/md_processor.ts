@@ -35,7 +35,6 @@ function applyLinkTargetBlank(tokens: Token[], idx: number, link: string) {
 /** Convert all internal links to link with custom onclick handler */
 function applyVueRouterLinks(tokens: Token[], idx: number, link: string) {
   const linkOpen = tokens[idx];
-  linkOpen.attrs = null;
   linkOpen.attrSet('onclick', `event.preventDefault(); window.app.$router.push('${link}')`);
 }
 
