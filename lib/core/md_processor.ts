@@ -25,7 +25,7 @@ md.use(require('../deps/markdown-it-video'), {
 
 /** Convert all external links to `<a target="_blank">` */
 function applyLinkTargetBlank(tokens: Token[], idx: number, link: string) {
-  if (~link.indexOf('http')) {
+  if (link.startsWith('http')) {
     tokens[idx].attrPush(['target', '_blank']);
     tokens[idx].attrPush(['rel', 'noopener']); // Prevent new tab access to window.opener
     return true;
